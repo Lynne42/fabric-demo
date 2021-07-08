@@ -1,0 +1,9 @@
+.canvasView {
+  padding: 20px;
+  border: solid 1px red;
+
+}
+.active {
+  background-color: red;
+  color: #fff;
+}

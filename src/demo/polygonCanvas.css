@@ -1,0 +1,21 @@
+
+
+.container {
+  position: relative;
+}
+.polygonCanvasView, .polygonCanvasRealView {
+
+  border: solid 1px red;
+}
+
+.polygonCanvasRealView {
+  /* position: absolute;
+  top: 0;
+  left: 0; */
+}
+
+.active {
+  background-color: red;
+  color: #fff;
+}
+

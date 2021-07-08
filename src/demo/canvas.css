@@ -1,0 +1,18 @@
+.canvas-view {
+  position: relative;
+  width: 320px;
+  height: 320px;
+}
+
+.img {
+  margin-bottom: 10px;
+}
+
+/* .canvas-container {
+  position: absolute!important;
+  top: 0;
+  left: 0;
+} */
+/* .canvas {
+  opacity: 0.5;
+} */
