@@ -5,10 +5,10 @@ const polygonConfig = {
   cornerStyle: "circle",
   cornerColor: "yellow",
   defaultFill: "rgba(0, 0, 0, 0.8)",
-  // opacity: 0.5,
-  selectable: false,
+  opacity: 0.5,
+  // selectable: false,
   hasBorders: false,
-  hasControls: false,
+  // hasControls: false,
   evented: false,
 };
 
@@ -39,13 +39,14 @@ const lineConfig = {
 };
 
 class DrawImage {
-  constructor(canvas) {
-    this.canvas = canvas;
+  constructor() {
   }
   // create canvas
-  createCanvas = (canvasDom, config={}) => {
-    return new window.fabric.Canvas(canvasDom, config)
-  }
+  createCanvas = (canvasDom, config = {}) => {
+    const canvas = new window.fabric.Canvas(canvasDom, config);
+    this.canvas = canvas;
+    return canvas
+  };
 
   // draw line
   generateLine = (points, config = {}) => {
@@ -66,7 +67,7 @@ class DrawImage {
   };
 
   // draw circle
-  generateCircle = (points, config={}) => {
+  generateCircle = (points, config = {}) => {
     const circle = new window.fabric.Circle({
       ...circlePointConfig,
       left: points.x,
@@ -76,7 +77,89 @@ class DrawImage {
       ...config,
     });
     return circle;
-  }
+  };
+
+  generateRect = (points, config = {}) => {
+    const rect = new window.fabric.Group(points, {
+      name: "rect",
+      ...config,
+    });
+    return rect;
+  };
+
+  generateGroup = (arr, config = {}) => {
+    const group = new window.fabric.Group(arr, {
+      name: "group",
+      originX: "center",
+      originY: "center",
+      ...config,
+    });
+    return group;
+  };
+
+  setControl = ({ lastControl, index, }) => {
+
+    return new window.fabric.Control({
+      positionHandler: this.polygonPositionHandler,
+      actionHandler: this.anchorWrapper(
+        index > 0 ? index - 1 : lastControl,
+        this.actionHandler
+      ),
+      actionName: "modifyPolygon",
+      pointIndex: index,
+    });
+  };
+
+  editPolygon = (poly) => {
+    console.log(4544, this.canvas)
+    this.canvas.setActiveObject(poly);
+    let lastControl = poly.points.length - 1;
+    poly.cornerStyle = "circle";
+    poly.cornerColor = "rgba(0,0,255,0.5)";
+    poly.controls = poly.points.reduce(function (acc, point, index) {
+      acc["p" + index] = this.setControl({
+        index,
+        lastControl,
+      });
+      return acc;
+    }, {});
+  };
+
+  polygonPositionHandler = (dim, finalMatrix, fabricObject) => {
+    var x = fabricObject.points[this.pointIndex].x - fabricObject.pathOffset.x,
+      y = fabricObject.points[this.pointIndex].y - fabricObject.pathOffset.y;
+    return window.fabric.util.transformPoint(
+      { x: x, y: y },
+      window.fabric.util.multiplyTransformMatrices(
+        fabricObject.canvas.viewportTransform,
+        fabricObject.calcTransformMatrix()
+      )
+    );
+  };
+
+  anchorWrapper = (anchorIndex, fn) => {
+    return function (eventData, transform, x, y) {
+      var fabricObject = transform.target,
+        absolutePoint = window.fabric.util.transformPoint(
+          {
+            x: fabricObject.points[anchorIndex].x - fabricObject.pathOffset.x,
+            y: fabricObject.points[anchorIndex].y - fabricObject.pathOffset.y,
+          },
+          fabricObject.calcTransformMatrix()
+        ),
+        actionPerformed = fn(eventData, transform, x, y),
+        newDim = fabricObject._setPositionDimensions({}),
+        polygonBaseSize = fabricObject._getNonTransformedDimensions(),
+        newX =
+          (fabricObject.points[anchorIndex].x - fabricObject.pathOffset.x) /
+          polygonBaseSize.x,
+        newY =
+          (fabricObject.points[anchorIndex].y - fabricObject.pathOffset.y) /
+          polygonBaseSize.y;
+      fabricObject.setPositionByOrigin(absolutePoint, newX + 0.5, newY + 0.5);
+      return actionPerformed;
+    };
+  };
 }
 
 export default DrawImage;
