@@ -8,8 +8,6 @@ class PolygonLabelImage extends LabelImage {
 
     this.Arrays.polygonErasePointIndex = 0;
     this.Arrays.polygonErasePointArray = [];
-
-
   }
 
   // 处理鼠标点下事件
@@ -31,10 +29,22 @@ class PolygonLabelImage extends LabelImage {
 
   // 点选 - 多边形
   handlePolygon = (options) => {
-    const { polygonPointArray } = this.Arrays.polygon;
-    if (options.target && options.target.id === polygonPointArray[0]?.id) {
+    const { polygonPointArray, polygonActiveShape } = this.Arrays.polygon;
+
+    let isPolygonStartPointBool = false;
+    if (polygonActiveShape) {
+      isPolygonStartPointBool = this.isPolygonStartPoint(options);
+    }
+
+    if ((options.target && options.target.id === polygonPointArray[0]?.id) || isPolygonStartPointBool) {
       this.generatePolygon({
         type: "polygon",
+        config: {
+          // objectCaching: false,
+          // transparentCorners: false,
+          renderOnAddRemove: true,
+          globalCompositeOperation: "lighter",
+        },
       });
     } else {
       this.addPolygonPoint({
@@ -46,14 +56,18 @@ class PolygonLabelImage extends LabelImage {
 
   // 点选 - 反选
   handleErase = (options) => {
-    const { polygonPointArray } = this.Arrays.polygon;
-    if (options.target && options.target.id === polygonPointArray[0]?.id) {
+    const { polygonPointArray, polygonActiveShape } = this.Arrays.polygon;
+    let isPolygonStartPointBool = false;
+    if (polygonActiveShape) {
+      isPolygonStartPointBool = this.isPolygonStartPoint(options);
+    }
+    if ((options.target && options.target.id === polygonPointArray[0]?.id) || isPolygonStartPointBool) {
       this.generatePolygon({
         type: "polygon-erase",
         config: {
           fill: "green",
           renderOnAddRemove: true,
-          globalCompositeOperation: "destination-out",
+          // globalCompositeOperation: "destination-out",
         },
       });
     } else {

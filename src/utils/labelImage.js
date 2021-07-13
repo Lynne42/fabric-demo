@@ -104,6 +104,7 @@ class LabelImage {
         polygonArray: [],
         polygonActiveLine: null,
         polygonActiveShape: null,
+        polygonEdit: false,
       },
     };
 
@@ -131,18 +132,24 @@ class LabelImage {
   }
 
   // 事件绑定
-  handleEvent = () => {
+  handleEvent() {
+    const that = this;
     const canvas = this.canvas;
-    canvas.on("mouse:wheel", this.handleZoom);
+    canvas.on("mouse:wheel", that.handleZoom.bind(that));
     // canvas.on("mouse:move", this.handleDrag);
 
     canvas.on("mouse:down", (options) => {
-      this.handleMouseDown(options);
+      that.handleMouseDown(options);
+      // 合成组
+      const { polygonOn, eraseOn } = that.Features;
+      if (!polygonOn || !eraseOn) {
+        // this.generateGroup();
+      }
     });
-  };
+  }
 
   // 缩放
-  handleZoom = (opt) => {
+  handleZoom(opt) {
     const delta = opt.e.deltaY;
     let zoom = (delta > 0 ? -0.1 : 0.1) + this.canvas.getZoom();
     zoom = Math.max(this.minScale, zoom);
@@ -151,10 +158,10 @@ class LabelImage {
     this.scale = zoom;
     opt.e.preventDefault();
     opt.e.stopPropagation();
-  };
+  }
 
   // 拖拽
-  handleDrag = (e) => {
+  handleDrag(e) {
     // 拖拽
     if (this.Features.dragOn && e && e.e) {
       const { movementX, movementY } = e.e;
@@ -163,28 +170,29 @@ class LabelImage {
 
       this.canvas.relativePan(delta);
     }
-  };
+  }
 
   // 设置 Features
-  resetFeaturesAttr = (key, value) => {
+  resetFeaturesAttr(key, value) {
     Object.keys(this.Features).forEach((item) => {
       this.Features[item] = false;
     });
     this.Features[key] = value;
-  };
+  }
 
   // 绘制多边形 点 线
-  addPolygonPoint = ({ options, type = "polygon", configCircle = {} }) => {
+  addPolygonPoint({ options, type = "polygon", configCircle = {} }) {
     const { canvas, Arrays } = this;
     let { polygonPointArray, polygonLineArray, polygonActiveShape } =
       Arrays.polygon;
 
     const arr = polygonPointArray || [];
 
+    const currentPoint = this.getCurrentPointInfo(options);
+
     const currentPointZoom = {
-      x: canvas.getPointer(options.e).x,
-      y: canvas.getPointer(options.e).y,
       name: `${type}-point-${arr.length}`,
+      ...currentPoint,
     };
 
     const circle = this.drawImage.generateCircle(
@@ -210,13 +218,11 @@ class LabelImage {
       const points = polygonActiveShape.get("points");
 
       points.push(currentPointZoom);
-
       const polygon = this.drawImage.generatePolygon(points);
 
       canvas.remove(polygonActiveShape);
       canvas.add(polygon);
       Arrays.polygon.polygonActiveShape = polygon;
-      canvas.renderAll();
     } else {
       const polygon = this.drawImage.generatePolygon([currentPointZoom]);
       Arrays.polygon.polygonActiveShape = polygon;
@@ -224,17 +230,17 @@ class LabelImage {
     }
 
     Arrays.polygon.polygonActiveLine = line;
-
     polygonPointArray.push(circle);
     polygonLineArray.push(line);
 
     canvas.add(line);
     canvas.add(circle);
     canvas.selection = false;
-  };
+  }
 
   // 绘制完整的多边形
-  generatePolygon = ({ type, config = {} }) => {
+  generatePolygon({ type, config = {} }) {
+    const originObject = this.canvas.getObjects();
     const { canvas, Arrays } = this;
     let {
       polygonPointArray,
@@ -262,47 +268,99 @@ class LabelImage {
 
     if (type === "polygon") {
       polygonArray.push(polygon);
-      this.drawImage.editPolygon(polygon);
-      //canvas.add(polygon);
-      //canvas.renderAll();
-    } else if (type === "polygon-erase") {
-      // polygonArray.forEach((item) => {
-      //   canvas.remove(item);
-      // });
+      // this.drawImage.editPolygon(polygon);
+      this.canvas.add(polygon);
 
+    } else if (type === "polygon-erase") {
+      polygonArray.forEach((item) => {
+        canvas.remove(item);
+      });
+      // this.drawImage.editPolygon(polygon);
       const groupClip = this.drawImage.generateGroup(
-        [...polygonArray, polygon],
+        [...originObject, polygon],
         {
-          selectable: true,
-          hasBorders: true,
-          hasControls: true,
+          selectable: false,
+          hasControls: false,
           evented: false,
+          clipPath: polygon,
         }
       );
 
       this.canvas.add(groupClip);
-      // groupClip.toActiveSelection();
-      this.canvas.renderAll();
     }
+    // canvas.remove(polygon);
 
-    canvas.selection = true;
+    // canvas.selection = true;
+
+    originObject.forEach((item) => canvas.remove(item));
+
+
+
+    var reader = new window.jsts.io.WKTReader();
+    var a = reader.read("POINT (-20 0)");
+    var b = reader.read("POINT (20 0)");
+
+    // originObject.forEach(item => canvas.remove(item))
+
+    canvas.remove(polygon);
+
+    console.log(333, groupClip.get("points"));
+
+    canvas.add(groupClip);
+    canvas.renderAll();
+
     this.resetFeaturesAttr("polygonOn", false);
     this.resetPolygonData();
 
-    console.log(1, this.canvas.getObjects());
-  };
+    console.log(2111, this.canvas.getObjects());
+  }
+
+  generateGroup() {
+    const objs = this.canvas.getObjects();
+    const group = this.drawImage.generateGroup([...objs], {
+      selectable: true,
+      hasBorders: true,
+      hasControls: true,
+      evented: false,
+    });
+    this.canvas.add(group);
+    objs.forEach((item) => this.canvas.remove(item));
+  }
+
+  // 判断当前点击的点是不是多边形的起点
+  isPolygonStartPoint(options) {
+    const { polygonActiveShape } = this.Arrays.polygon;
+    const startPoint = polygonActiveShape.get("points")[0];
+    const currentPoint = this.getCurrentPointInfo(options);
+    const radius = Math.floor(circlePointConfig.radius / 2);
+    if (
+      Math.abs(startPoint.x - currentPoint.x) <= radius &&
+      Math.abs(startPoint.y - currentPoint.y) <= radius
+    ) {
+      return true;
+    }
+    return false;
+  }
+
+  // 获取当前点击点的位置
+  getCurrentPointInfo(options) {
+    return {
+      x: this.canvas.getPointer(options.e).x,
+      y: this.canvas.getPointer(options.e).y,
+    };
+  }
 
   // reset Arrays.polygon
-  resetPolygonData = () => {
+  resetPolygonData() {
     const polygon = this.Arrays.polygon;
     polygon.polygonActiveLine = null;
     polygon.polygonActiveShape = null;
     polygon.polygonPointArray = [];
     polygon.polygonLineArray = [];
-  };
+  }
 
   // 设置背景图片
-  setImage = (imgsrc) => {
+  setImage(imgsrc) {
     const that = this;
     window.fabric.Image.fromURL(
       imgsrc,
@@ -331,9 +389,9 @@ class LabelImage {
       },
       { crossOrigin: "anonymous" }
     );
-  };
+  }
 
-  createResultImage = () => {
+  createResultImage() {
     const result = this.canvas.toDataURL({
       format: "jpeg", // jpeg或png
       quality: 0.8, // 图片质量，仅jpeg时可用
@@ -344,16 +402,15 @@ class LabelImage {
       height: 320,
     });
     this.Arrays.resultLabelImage = result;
-    console.log(34, result);
-  };
+  }
 
   // 获取指定name的object
-  getObjectsByName = (name = "") => {
+  getObjectsByName(name = "") {
     return this.canvas.getObjects().filter((item) => item.name === name);
-  };
+  }
 
   // 边界检测
-  checkBoudningBox = (e) => {
+  checkBoudningBox(e) {
     const obj = e.target;
     if (!obj) {
       return;
@@ -380,7 +437,7 @@ class LabelImage {
       obj.set("left", objBoundingBox.width / 2);
       obj.setCoords();
     }
-  };
+  }
 }
 
 export default LabelImage;
