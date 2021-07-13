@@ -4,10 +4,14 @@ import DrawImage, {
   lineConfig,
 } from "./drawImage";
 
+import CombineImage from './combineImage';
+
 class LabelImage {
   constructor(options) {
     this.drawImage = new DrawImage();
+    this.combineImage = new CombineImage();
 
+    
     // 画布节点
     this.canvas = this.drawImage.createCanvas(
       options.canvas,
@@ -269,7 +273,20 @@ class LabelImage {
     if (type === "polygon") {
       polygonArray.push(polygon);
       // this.drawImage.editPolygon(polygon);
-      this.canvas.add(polygon);
+
+      if(polygonArray.length > 1) {
+        
+        const newPoint = this.combineImage.union(canvas.getObjects()[0].get('points'), points);
+        console.log(89888, newPoint)
+        this.clearObject();
+        
+        newPoint.forEach(np => {
+          this.canvas.add(this.drawImage.generatePolygon(np, config))
+        })
+        canvas.renderAll();
+      } else {
+        this.canvas.add(polygon);
+      }
 
     } else if (type === "polygon-erase") {
       polygonArray.forEach((item) => {
@@ -288,31 +305,23 @@ class LabelImage {
 
       this.canvas.add(groupClip);
     }
-    // canvas.remove(polygon);
 
-    // canvas.selection = true;
-
-    originObject.forEach((item) => canvas.remove(item));
-
-
-
-    var reader = new window.jsts.io.WKTReader();
-    var a = reader.read("POINT (-20 0)");
-    var b = reader.read("POINT (20 0)");
-
-    // originObject.forEach(item => canvas.remove(item))
-
-    canvas.remove(polygon);
-
-    console.log(333, groupClip.get("points"));
-
-    canvas.add(groupClip);
-    canvas.renderAll();
-
+    // canvas.add(groupClip);
+    
     this.resetFeaturesAttr("polygonOn", false);
     this.resetPolygonData();
-
     console.log(2111, this.canvas.getObjects());
+  }
+
+  createCombinePolygon() {
+    
+  }
+
+  clearObject() {
+    const objs = this.canvas.getObjects();
+    objs.forEach(item => {
+      this.canvas.remove(item)
+    })
   }
 
   generateGroup() {
