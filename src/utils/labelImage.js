@@ -262,9 +262,9 @@ class LabelImage {
 
     if (type === "polygon") {
       polygonArray.push(polygon);
-      this.drawImage.editPolygon();
-      canvas.add(polygon);
-      canvas.renderAll();
+      this.drawImage.editPolygon(polygon);
+      //canvas.add(polygon);
+      //canvas.renderAll();
     } else if (type === "polygon-erase") {
       // polygonArray.forEach((item) => {
       //   canvas.remove(item);
@@ -291,8 +291,6 @@ class LabelImage {
 
     console.log(1, this.canvas.getObjects());
   };
-
-  drawGroup = (clip) => {};
 
   // reset Arrays.polygon
   resetPolygonData = () => {
@@ -326,8 +324,6 @@ class LabelImage {
         that.iWidth = img.width;
         // 图片高度
         that.iHeight = img.height;
-        // that.canvas.add(img);
-        // that.canvas.sendToBack(img)
         that.canvas.setBackgroundImage(
           img,
           that.canvas.renderAll.bind(that.canvas)
