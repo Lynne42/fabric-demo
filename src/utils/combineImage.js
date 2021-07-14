@@ -15,18 +15,69 @@ class CombineImage {
     return res;
   }
 
-  union(points1, point2) {
-    console.log(points1, point2)
+
+  union(points1, points2) {
+    const [poly1, poly2] =this.generatePolyByPoint(points1, points2);
+    const diff = poly1.union(poly2);
+    return this.getPolygonPoint(diff);
+
+  }
+
+  multiUnion(originPolyArr, targetPoly, callback) {
+    let nowPoly = targetPoly;
+
+    for(let i = 0, len = originPolyArr.length; i < len; i++) {
+      const newPoint = this.union(
+        originPolyArr[i].get("points"),
+        nowPoly.get('points')
+      );
+      nowPoly = callback(newPoint);
+    }
+    return nowPoly
+  }
+
+  difference(points1, points2) {
+    const [poly1, poly2] =this.generatePolyByPoint(points1, points2);
+
+    const diff = poly1.difference(poly2);
+
+    return this.getPolygonPoint(diff);
+  }
+
+  multiDifference(originPolyArr, targetPoly) {
+    let nowPoly = targetPoly;
+    let resultPoints = [];
+    for(let i = 0, len = originPolyArr.length; i < len; i++) {
+      const newPoint = this.difference(
+        originPolyArr[i].get("points"),
+        nowPoly.get('points')
+      );
+      resultPoints = [...resultPoints, ...newPoint];
+    }
+    return resultPoints
+  }
+
+  intersection(points1, points2) {
+    const [poly1, poly2] =this.generatePolyByPoint(points1, points2);
+
+    const diff = poly1.intersection(poly2);
+    return this.getPolygonPoint(diff);
+  }
+
+  xor(points1, points2) {
+    const [poly1, poly2] =this.generatePolyByPoint(points1, points2);
+
+    const diff = poly1.xor(poly2);
+    return this.getPolygonPoint(diff);
+  }
+
+  generatePolyByPoint(points1, point2) {
     const p1 = this.transformPointObjToArray(points1);
     const p2 = this.transformPointObjToArray(point2);
 
     const poly1 = this.createPoly(p1);
     const poly2 = this.createPoly(p2);
-
-    const diff = poly1.union(poly2);
-    return this.getPolygonPoint(diff);
-
-    // drawPoly(diff, "green", 0, 150);
+    return [poly1, poly2]
   }
 
   getPolygonPoint(polygon) {
@@ -36,9 +87,9 @@ class CombineImage {
     for (let i = 0; i < num; i++) {
       const poly = polygon.getInnerPoly(i);
       const vertices = this.getPolygonVertices(poly);
+
+      console.log(89888, poly,  vertices)
       arr.push(vertices);
-      // if (i == 0) drawSinglePoly(vertices, strokeColor, poly.isHole(), ox, oy);
-      // else drawSinglePoly(vertices, colors[i % num], poly.isHole(), ox, oy);
     }
     return arr
   }

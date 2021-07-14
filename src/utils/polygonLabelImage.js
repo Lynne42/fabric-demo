@@ -39,12 +39,6 @@ class PolygonLabelImage extends LabelImage {
     if ((options.target && options.target.id === polygonPointArray[0]?.id) || isPolygonStartPointBool) {
       this.generatePolygon({
         type: "polygon",
-        config: {
-          // objectCaching: false,
-          // transparentCorners: false,
-          renderOnAddRemove: true,
-          globalCompositeOperation: "lighter",
-        },
       });
     } else {
       this.addPolygonPoint({
@@ -67,7 +61,7 @@ class PolygonLabelImage extends LabelImage {
         config: {
           fill: "green",
           renderOnAddRemove: true,
-          // globalCompositeOperation: "destination-out",
+          globalCompositeOperation: "destination-out",
         },
       });
     } else {

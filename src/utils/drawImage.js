@@ -4,12 +4,11 @@ const polygonConfig = {
   stroke: "blue",
   cornerStyle: "circle",
   cornerColor: "yellow",
-  defaultFill: "rgba(0, 0, 0, 0.8)",
   opacity: 0.5,
   selectable: false,
   hasBorders: false,
-  // hasControls: false,
-  // evented: false,
+  hasControls: false,
+  evented: false,
 };
 
 const circlePointConfig = {
@@ -37,6 +36,9 @@ const lineConfig = {
   hasControls: false,
   evented: false,
 };
+
+export const INTERSECT = 'intersect'
+export const CONTAIN = 'contain'
 
 class DrawImage {
   // create canvas
@@ -94,6 +96,36 @@ class DrawImage {
       ...config,
     });
     return group;
+  }
+
+  // Get intersecting and non-intersecting or included and non-included graph row data
+  getIntersectsOrContainResult(polyArr, targetPoly, type) {
+    const intersectsArr = [];
+    const resultPoly = [];
+    const fn = type === INTERSECT ? this.isIntersectsWithObject : this.isContainedWithinObject;
+
+    for(let i = 0, len = polyArr.length; i< len; i++) {
+      if(fn(polyArr[i], targetPoly)) {
+        intersectsArr.push(polyArr[i])
+      } else {
+        resultPoly.push(polyArr[i]);
+      }
+    }
+    return {
+      intersectionArr: intersectsArr,
+      noIntersectionArr: resultPoly
+    }
+  }
+
+  // Determine whether there is an intersection between two graphics
+  isIntersectsWithObject(poly1, poly2) {
+    return poly1.intersectsWithObject(poly2)
+  }
+
+  // Determine whether the two graphics are in a containment relationship
+  isContainedWithinObject(poly1, poly2) {
+    // Only judge whether the original image contains the target image
+    return poly2.isContainedWithinObject(poly1)
   }
 
   editPolygon(poly) {
@@ -181,6 +213,8 @@ class DrawImage {
       return actionPerformed;
     };
   }
+
+
 }
 
 export default DrawImage;

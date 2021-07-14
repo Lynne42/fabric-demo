@@ -9,7 +9,7 @@ const FabricPolygonComponent = () => {
   const canvasRef = useRef(null);
 
   const [canvas, setcanvas] = useState(null);
-  // const [type, settype] = useState('')
+  const [type, settype] = useState('polygonOn')
 
   useEffect(() => {
     const canvasContent = canvasRef.current;
@@ -38,25 +38,21 @@ const FabricPolygonComponent = () => {
     initCanvas.setImage("https://i.ibb.co/cXKy30V/Rectangle-139.png");
   }, []);
 
-  const type = useMemo(() => {
-    return canvas
-      ? Object.keys(canvas.Features).filter((item) => canvas.Features[item])[0]
-      : "";
-  }, [canvas]);
-
   const handleDrag = () => {
+    settype("dragOn")
     canvas.resetFeaturesAttr("dragOn", true);
   };
   const handlePolygon = () => {
+    settype("polygonOn")
     canvas.resetFeaturesAttr("polygonOn", true);
   };
-
   const handleErase = () => {
+    settype("eraseOn")
     canvas.resetFeaturesAttr("eraseOn", true);
   };
-
   const handleDownload = () => {
-    canvas.resetFeaturesAttr("dragOn", true);
+    settype("downOn")
+    canvas.resetFeaturesAttr("downOn", true);
     canvas.handleToDataURL();
   };
 
@@ -69,14 +65,7 @@ const FabricPolygonComponent = () => {
           </canvas>
         </div>
         <div>
-          {canvas && <img src={canvas.Arrays.resultLabelImage} />}
 
-          {/* <button
-          className={type === "dragOn" ? "active" : ""}
-          onClick={handleDrag}
-        >
-          drag
-        </button> */}
           <button
             className={type === "polygonOn" ? "active" : ""}
             onClick={handlePolygon}
@@ -89,8 +78,16 @@ const FabricPolygonComponent = () => {
           >
             Area Erase
           </button>
+
           <button
-            className={type === "eraseOn" ? "active" : ""}
+            className={type === "dragOn" ? "active" : ""}
+            onClick={handleDrag}
+          >
+            drag
+          </button>
+
+          <button
+            className={type === "downOn" ? "active" : ""}
             onClick={handleDownload}
           >
             result

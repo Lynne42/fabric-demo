@@ -2,16 +2,17 @@ import DrawImage, {
   polygonConfig,
   circlePointConfig,
   lineConfig,
+  INTERSECT,
+  CONTAIN,
 } from "./drawImage";
 
-import CombineImage from './combineImage';
+import CombineImage from "./combineImage";
 
 class LabelImage {
   constructor(options) {
     this.drawImage = new DrawImage();
     this.combineImage = new CombineImage();
 
-    
     // 画布节点
     this.canvas = this.drawImage.createCanvas(
       options.canvas,
@@ -144,11 +145,6 @@ class LabelImage {
 
     canvas.on("mouse:down", (options) => {
       that.handleMouseDown(options);
-      // 合成组
-      const { polygonOn, eraseOn } = that.Features;
-      if (!polygonOn || !eraseOn) {
-        // this.generateGroup();
-      }
     });
   }
 
@@ -244,14 +240,12 @@ class LabelImage {
 
   // 绘制完整的多边形
   generatePolygon({ type, config = {} }) {
-    const originObject = this.canvas.getObjects();
     const { canvas, Arrays } = this;
     let {
       polygonPointArray,
       polygonLineArray,
       polygonActiveLine,
       polygonActiveShape,
-      polygonArray,
     } = Arrays.polygon;
 
     const points = [];
@@ -271,57 +265,99 @@ class LabelImage {
     const polygon = this.drawImage.generatePolygon(points, config);
 
     if (type === "polygon") {
-      polygonArray.push(polygon);
       // this.drawImage.editPolygon(polygon);
 
-      if(polygonArray.length > 1) {
-        
-        const newPoint = this.combineImage.union(canvas.getObjects()[0].get('points'), points);
-        console.log(89888, newPoint)
-        this.clearObject();
-        
-        newPoint.forEach(np => {
-          this.canvas.add(this.drawImage.generatePolygon(np, config))
-        })
-        canvas.renderAll();
-      } else {
-        this.canvas.add(polygon);
-      }
+      this.createCombinePolygon(polygon, config);
 
     } else if (type === "polygon-erase") {
-      polygonArray.forEach((item) => {
-        canvas.remove(item);
-      });
-      // this.drawImage.editPolygon(polygon);
-      const groupClip = this.drawImage.generateGroup(
-        [...originObject, polygon],
-        {
-          selectable: false,
-          hasControls: false,
-          evented: false,
-          clipPath: polygon,
-        }
-      );
 
-      this.canvas.add(groupClip);
+      this.createErasePolygon(polygon, config)
     }
 
-    // canvas.add(groupClip);
-    
-    this.resetFeaturesAttr("polygonOn", false);
+    // this.resetFeaturesAttr("polygonOn", false);
     this.resetPolygonData();
     console.log(2111, this.canvas.getObjects());
   }
 
-  createCombinePolygon() {
-    
+  createCombinePolygon(newPolygon, config) {
+    let nowPoly =  newPolygon;
+    const canvas= this.canvas;
+    const preObjects = canvas.getObjects();
+
+    if(!preObjects.length) {
+      canvas.add(nowPoly);
+      return
+    }
+
+    const { intersectionArr, noIntersectionArr } = this.drawImage.getIntersectsOrContainResult(preObjects, nowPoly, INTERSECT);
+
+    if(intersectionArr.length) {
+      nowPoly = this.combineImage.multiUnion(intersectionArr, nowPoly, (polyPoint) => (
+        this.drawImage.generatePolygon(polyPoint[0], config)
+      ))
+    }
+
+    noIntersectionArr.push(nowPoly);
+
+    this.updatePolygon(noIntersectionArr);
+
+  }
+
+  createErasePolygon(newPolygon, config) {
+    let nowPoly =  newPolygon;
+    const canvas= this.canvas;
+    const preObjects = canvas.getObjects();
+
+    // First determine whether to include the relationship
+    const { intersectionArr: containArr, noIntersectionArr: nocontainArr } = this.drawImage.getIntersectsOrContainResult(preObjects, nowPoly, CONTAIN);
+
+    if(containArr.length) {
+      containArr.forEach(item => {
+        const containPointsArr = this.combineImage.xor(containArr[0].get('points'), nowPoly.get('points'));
+        console.log(45444, containPointsArr )
+        this.clearObject();
+        for(let i = 0, len = containPointsArr.length; i< len; i++) {
+
+          canvas.add(this.drawImage.generatePolygon(containPointsArr[i], config))
+        }
+      })
+    } else {
+      // Determine the intersecting relationship
+      const { intersectionArr, noIntersectionArr } = this.drawImage.getIntersectsOrContainResult(preObjects, nowPoly, INTERSECT);
+    }
+
+
+
+
+    // isContainedWithinObject
+    // if(intersectionArr.length) {
+    //   const resultPoints = this.combineImage.multiDifference(intersectionArr, nowPoly);
+
+    //   resultPoints.forEach(item => {
+    //     noIntersectionArr.push(this.drawImage.generatePolygon(item, config))
+    //   })
+    // }
+
+    // this.updatePolygon(noIntersectionArr);
+
+  }
+
+  updatePolygon(polysArr=[]) {
+    this.clearObject();
+
+    polysArr.forEach((np) => {
+      if(np) {
+        this.canvas.add(np);
+      }
+    });
+    this.canvas.renderAll();
   }
 
   clearObject() {
     const objs = this.canvas.getObjects();
-    objs.forEach(item => {
-      this.canvas.remove(item)
-    })
+    objs.forEach((item) => {
+      this.canvas.remove(item);
+    });
   }
 
   generateGroup() {
@@ -336,7 +372,12 @@ class LabelImage {
     objs.forEach((item) => this.canvas.remove(item));
   }
 
-  // 判断当前点击的点是不是多边形的起点
+  // get all graphics objects on the current canvas
+  getObjects() {
+    return this.canvas.getObjects()
+  }
+
+  // Determine whether the current point is in a circle
   isPolygonStartPoint(options) {
     const { polygonActiveShape } = this.Arrays.polygon;
     const startPoint = polygonActiveShape.get("points")[0];
@@ -351,7 +392,7 @@ class LabelImage {
     return false;
   }
 
-  // 获取当前点击点的位置
+  // get current point info
   getCurrentPointInfo(options) {
     return {
       x: this.canvas.getPointer(options.e).x,
@@ -368,7 +409,7 @@ class LabelImage {
     polygon.polygonLineArray = [];
   }
 
-  // 设置背景图片
+  // set background image
   setImage(imgsrc) {
     const that = this;
     window.fabric.Image.fromURL(
@@ -400,6 +441,7 @@ class LabelImage {
     );
   }
 
+  // create result base64 image
   createResultImage() {
     const result = this.canvas.toDataURL({
       format: "jpeg", // jpeg或png
@@ -413,10 +455,6 @@ class LabelImage {
     this.Arrays.resultLabelImage = result;
   }
 
-  // 获取指定name的object
-  getObjectsByName(name = "") {
-    return this.canvas.getObjects().filter((item) => item.name === name);
-  }
 
   // 边界检测
   checkBoudningBox(e) {
