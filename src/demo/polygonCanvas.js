@@ -19,19 +19,18 @@ const FabricPolygonComponent = () => {
       canvasConfig: {
         height: 320,
         width: 320,
-        selection: false,
+        // selection: false,
         // centeredScaling: false,
         // selectable: false,
         // hasControls: false,
         // hasBorders: false,
-        objectCaching: true,
+        // objectCaching: true,
         lockMovementX: true,
         lockMovementY: true,
         // preserveObjectStacking: true,
       },
     });
 
-    // initCanvas.perPixelTargetFind = true;
     initCanvas.resetFeaturesAttr("polygonOn", true);
 
     setcanvas(initCanvas);
@@ -60,6 +59,7 @@ const FabricPolygonComponent = () => {
     <div className="container">
       <div>
         <div className="polygonCanvasView">
+
           <canvas ref={canvasRef} width="320" height="320" className="canvas">
             您的浏览器不支持canvas，请更换浏览器.
           </canvas>

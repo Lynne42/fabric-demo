@@ -1,10 +1,10 @@
 const polygonConfig = {
   class: "polygon",
-  fill: "red",
-  stroke: "blue",
+  fill: "rgba(255, 255, 255, 0.4)",
+  stroke: "rgba(255, 255, 255, 0.4)",
   cornerStyle: "circle",
   cornerColor: "yellow",
-  opacity: 0.5,
+  // opacity: 0.5,
   selectable: false,
   hasBorders: false,
   hasControls: false,
@@ -116,6 +116,54 @@ class DrawImage {
       noIntersectionArr: resultPoly
     }
   }
+
+  getContainResult(polyArr, targetPoly) {
+    const intersectsArr = [];
+    const resultPoly = [];
+    const fn = this.isContainedWithinObject;
+
+    let countPositive = 0;
+    let countNegative = 0;
+
+    for(let i = 0, len = polyArr.length; i< len; i++) {
+      if(fn(polyArr[i], targetPoly)) {
+        resultPoly.push(polyArr[i]);
+        countPositive += 1;
+      } else if(fn(targetPoly, polyArr[i])) {
+
+        resultPoly.push(targetPoly);
+      } else {
+        resultPoly.push(polyArr[i]);
+        resultPoly.push(targetPoly);
+      }
+    }
+    return {
+      polygon: resultPoly,
+      polygonHole: countPositive ? [targetPoly] : []
+    }
+  }
+
+  getContainResultCombine(polyArr, targetPoly) {
+    const intersectsArr = [];
+    const resultPoly = [];
+    let count = 0;
+
+    for(let i = 0, len = polyArr.length; i< len; i++) {
+      if(this.isContainedWithinObject(polyArr[i], targetPoly)) {
+        count +=1;
+      } else if(this.isContainedWithinObject(targetPoly, polyArr[i])) {
+        resultPoly.push(polyArr[i]);
+      } else {
+        resultPoly.push(polyArr[i]);
+      }
+    }
+
+    return {
+      intersectionArr: targetPoly,
+      noIntersectionArr: resultPoly
+    }
+  }
+
 
   // Determine whether there is an intersection between two graphics
   isIntersectsWithObject(poly1, poly2) {

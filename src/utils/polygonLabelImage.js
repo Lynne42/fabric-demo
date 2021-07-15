@@ -59,9 +59,8 @@ class PolygonLabelImage extends LabelImage {
       this.generatePolygon({
         type: "polygon-erase",
         config: {
-          fill: "green",
-          renderOnAddRemove: true,
-          globalCompositeOperation: "destination-out",
+          fill: "rgba(24, 171, 121, 0.5)",
+          name: 'polygon-erase',
         },
       });
     } else {
@@ -71,7 +70,6 @@ class PolygonLabelImage extends LabelImage {
         configCircle: {
           fill: "rgba(255, 86, 86, 0.5)",
           firstFill: "rgba(255, 86, 218, 0.5)",
-          stroke: "black",
         },
       });
     }

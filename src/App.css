@@ -14,7 +14,7 @@
 }
 
 .App-header {
-  background-color: black;
+  background-color: #fff;
   min-height: 100vh;
   padding-top: 100px;
   display: flex;
@@ -38,6 +38,3 @@
   }
 }
 
-canvas {
-
-}

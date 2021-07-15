@@ -34,7 +34,7 @@ class LabelImage {
     // 缩放布进
     this.scaleStep = 0.02;
     // 最小缩放比例
-    this.minScale = 0.2;
+    this.minScale = 1;
     // 最大缩放比例
     this.maxScale = 8;
     // 图片在画板中的横坐标
@@ -107,6 +107,7 @@ class LabelImage {
         polygonPointArray: [],
         polygonLineArray: [],
         polygonArray: [],
+        polygonMark: {},
         polygonActiveLine: null,
         polygonActiveShape: null,
         polygonEdit: false,
@@ -183,8 +184,7 @@ class LabelImage {
   // 绘制多边形 点 线
   addPolygonPoint({ options, type = "polygon", configCircle = {} }) {
     const { canvas, Arrays } = this;
-    let { polygonPointArray, polygonLineArray, polygonActiveShape } =
-      Arrays.polygon;
+    let { polygonPointArray, polygonLineArray, polygonActiveShape } = Arrays.polygon;
 
     const arr = polygonPointArray || [];
 
@@ -279,67 +279,184 @@ class LabelImage {
     console.log(2111, this.canvas.getObjects());
   }
 
+  // handle area select combine
   createCombinePolygon(newPolygon, config) {
+
+    const { canvas, Arrays } = this;
+    let { polygonPointArray, polygonLineArray, polygonMark } = Arrays.polygon;
+
+    console.log('init', this.Features)
     let nowPoly =  newPolygon;
-    const canvas= this.canvas;
-    const preObjects = canvas.getObjects();
+    const preObjects = this.getObjects();
 
     if(!preObjects.length) {
       canvas.add(nowPoly);
+      polygonMark['polygon-0'] = nowPoly;
       return
     }
 
-    const { intersectionArr, noIntersectionArr } = this.drawImage.getIntersectsOrContainResult(preObjects, nowPoly, INTERSECT);
+    console.log(11, polygonMark)
 
-    if(intersectionArr.length) {
-      nowPoly = this.combineImage.multiUnion(intersectionArr, nowPoly, (polyPoint) => (
-        this.drawImage.generatePolygon(polyPoint[0], config)
-      ))
+
+    // 获取画布上 洞 与 图形的各个集合
+    const { pythons, pythonsHole, } = this.transformObjectToGroupByType();
+
+    if(pythonsHole.length) {
+      /*
+      如果当前画布上有洞
+        - 获取画布上的洞 与 新图形的 包含关系
+          如果有包含关系，则返回 合并后的 图形列表
+      */
+
+      const { intersectionArr: containArr, noIntersectionArr: nocontainArr } = this.drawImage.getContainResultCombine(pythonsHole, nowPoly, CONTAIN);
+      if(containArr) {
+
+      }
+
+    } else {
+
+      polygonMark = {};
+      // 当前画布上没有洞， 直接与画布上的图形做并集
+
+      // 获取当前画布上的图形 与新图形有无 交集的情况 （ 并集即使是包含关系也能正确判断）
+      const { intersectionArr, noIntersectionArr } = this.drawImage.getIntersectsOrContainResult(pythons, nowPoly, INTERSECT);
+      console.log(3433, intersectionArr, noIntersectionArr)
+      if(intersectionArr.length) {
+        // 如果判断有交集， 则进行合并， 将合并后的图形继续与下一个图形进行 并集
+        nowPoly = this.combineImage.multiUnion(intersectionArr, nowPoly, (polyPoint) => (
+          this.drawImage.generatePolygon(polyPoint[0], config)
+        ))
+      }
+      noIntersectionArr.push(nowPoly)
+      noIntersectionArr.forEach((item, index) => {
+        polygonMark[`polygon-${index}`] = item;
+      });
+      this.updatePolygon(noIntersectionArr);
+
     }
 
-    noIntersectionArr.push(nowPoly);
+    console.log('polygonMark', polygonMark)
+  }
 
-    this.updatePolygon(noIntersectionArr);
+
+  // handle area erase combine
+  createErasePolygon(newPolygon, config) {
+    let nowPoly =  newPolygon;
+    const { canvas, Arrays } = this;
+    let { polygonPointArray, polygonLineArray, polygonMark } = Arrays.polygon;
+    polygonMark = {};
+
+    const preObjects = this.getObjects();
+
+    // 获取画布上 洞 与 图形的各个集合
+    const { pythons, pythonsHole, } = this.transformObjectToGroupByType();
+
+
+    /**
+     * 判断要删除的多边形
+     * - 是否与原多边形 和 孔 有包含关系
+     *    - 如果有包含关系的话， 直接设置2D效果
+     *    - 如果没有包含关系
+     *      - 判断与原多边形是否有交集
+     *        - 如果有交集，则直接剪切
+     *
+     *        - 如果没有交集， 则废弃该多边形
+     */
+    // First determine whether to include the relationship
+
+    if(pythonsHole.length) {
+      const { polygon, polygonHole } = this.drawImage.getContainResult(pythons, nowPoly);
+      const result = this.getEraseResultPolygon(polygon, [...pythonsHole, ...polygonHole, ], config);
+      console.log(5555, pythons, pythonsHole, polygon, polygonHole, result)
+      this.clearObject();
+      result.forEach(item => {
+        canvas.add(item)
+      })
+
+    } else {
+      const { intersectionArr: containArr, noIntersectionArr: nocontainArr } = this.drawImage.getIntersectsOrContainResult(pythons, nowPoly, CONTAIN);
+
+      if(containArr.length) {
+        this.clearObject();
+        nocontainArr.forEach(item => {
+          canvas.add(item)
+        })
+        containArr.forEach((item, index) => {
+          item.flag = 'polygon-parent-hole-' + index;
+          canvas.add(item)
+        })
+        canvas.add(this.drawImage.generatePolygon(nowPoly.get('points'), {
+          ...config,
+          fill: 'rgba(255, 255, 255, 0.5)',
+          globalCompositeOperation: 'destination-out',
+          flag: 'polygon-erase-hole'
+        }))
+        canvas.renderAll();
+
+      } else {
+        // Determine the intersecting relationship
+        const { intersectionArr, noIntersectionArr } = this.drawImage.getIntersectsOrContainResult(preObjects, nowPoly, INTERSECT);
+        if(intersectionArr.length) {
+
+          const resultPoints = this.combineImage.multiDifference(intersectionArr, nowPoly);
+
+          resultPoints.forEach(item => {
+            noIntersectionArr.push(this.drawImage.generatePolygon(item, config))
+          })
+        }
+
+        noIntersectionArr.forEach((item, index) => {
+          polygonMark[`polygon-${index}`] = item;
+        });
+        this.updatePolygon(noIntersectionArr);
+      }
+    }
+
+
+    console.log('polygonMark', polygonMark)
+    // isContainedWithinObject
+
 
   }
 
-  createErasePolygon(newPolygon, config) {
-    let nowPoly =  newPolygon;
-    const canvas= this.canvas;
-    const preObjects = canvas.getObjects();
+  // handle polygon and polygon hole
+  getEraseResultPolygon(polygons, polygonsHole, config) {
+    const { isContainedWithinObject, isIntersectsWithObject } = this.drawImage;
+    let arr = [];
 
-    // First determine whether to include the relationship
-    const { intersectionArr: containArr, noIntersectionArr: nocontainArr } = this.drawImage.getIntersectsOrContainResult(preObjects, nowPoly, CONTAIN);
-
-    if(containArr.length) {
-      containArr.forEach(item => {
-        const containPointsArr = this.combineImage.xor(containArr[0].get('points'), nowPoly.get('points'));
-        console.log(45444, containPointsArr )
-        this.clearObject();
-        for(let i = 0, len = containPointsArr.length; i< len; i++) {
-
-          canvas.add(this.drawImage.generatePolygon(containPointsArr[i], config))
+    for(let i = 0, len = polygons.length; i < len; i++) {
+      for(let j = 0, len1 = polygonsHole.length; j < len1; j++) {
+        if(isContainedWithinObject(polygons[i], polygonsHole[j])) {
+          arr.push(polygons[i]);
+          arr.push(polygonsHole[j]);
+          continue
+        } else if(isIntersectsWithObject(polygons[i], polygonsHole[j])) {
+          const resultPoints = this.combineImage.difference(polygons[i], polygonsHole[j]);
+          arr.push(this.drawImage.generatePolygon(resultPoints, config))
+        } else {
+          arr.push(polygons[i]);
         }
-      })
-    } else {
-      // Determine the intersecting relationship
-      const { intersectionArr, noIntersectionArr } = this.drawImage.getIntersectsOrContainResult(preObjects, nowPoly, INTERSECT);
+      }
     }
+    return arr
+  }
 
-
-
-
-    // isContainedWithinObject
-    // if(intersectionArr.length) {
-    //   const resultPoints = this.combineImage.multiDifference(intersectionArr, nowPoly);
-
-    //   resultPoints.forEach(item => {
-    //     noIntersectionArr.push(this.drawImage.generatePolygon(item, config))
-    //   })
-    // }
-
-    // this.updatePolygon(noIntersectionArr);
-
+  // determine python or python hole
+  transformObjectToGroupByType() {
+    const objs = this.getObjects();
+    let pythons = [];
+    let pythonsHole = [];
+    objs.forEach(item => {
+      if(item.flag && item.flag.startsWith('polygon-erase')) {
+        pythonsHole.push(item);
+      } else {
+        pythons.push(item);
+      }
+    })
+    return {
+      pythons,
+      pythonsHole,
+    }
   }
 
   updatePolygon(polysArr=[]) {
@@ -354,7 +471,8 @@ class LabelImage {
   }
 
   clearObject() {
-    const objs = this.canvas.getObjects();
+    const objs = this.getObjects();
+
     objs.forEach((item) => {
       this.canvas.remove(item);
     });
