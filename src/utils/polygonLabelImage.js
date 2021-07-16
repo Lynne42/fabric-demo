@@ -59,7 +59,6 @@ class PolygonLabelImage extends LabelImage {
       this.generatePolygon({
         type: "polygon-erase",
         config: {
-          fill: "rgba(24, 171, 121, 0.5)",
           name: 'polygon-erase',
         },
       });

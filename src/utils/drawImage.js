@@ -4,10 +4,9 @@ const polygonConfig = {
   stroke: "rgba(255, 255, 255, 0.4)",
   cornerStyle: "circle",
   cornerColor: "yellow",
-  // opacity: 0.5,
   selectable: false,
   hasBorders: false,
-  hasControls: false,
+  // hasControls: false,
   evented: false,
 };
 
@@ -164,16 +163,52 @@ class DrawImage {
     }
   }
 
+  // 判断目标元素与已有元素是否有交集
+  getIntersectionByPreAndTarget(perObjects, target) {
+    const relationshipList = [];
+    const noRelationshipList = [];
+    perObjects.forEach(item => {
+      if(this.isIntersectsWithObject(item, target)) {
+        relationshipList.push(item);
+      } else {
+        noRelationshipList.push(item);
+      }
+    })
+    return {
+      relationshipList,
+      noRelationshipList,
+    }
+  }
+
+  // 判断目标与已有元素是不是包含关系
+  getContainerByPreOrTarget(perObjects, target) {
+    const isContainedWithinObject = this.isContainedWithinObject;
+    const containerList = [];
+    const noContainerList = [];
+    perObjects.forEach(item => {
+      if(isContainedWithinObject(item, target)) {
+        containerList.push(item);
+      } else if(isContainedWithinObject(target, item)) {
+      } else {
+        noContainerList.push(item);
+      }
+    })
+
+    return {
+      containerList,
+      noContainerList,
+    }
+  }
 
   // Determine whether there is an intersection between two graphics
   isIntersectsWithObject(poly1, poly2) {
-    return poly1.intersectsWithObject(poly2)
+    return poly1.intersectsWithObject(poly2, false, true)
   }
 
   // Determine whether the two graphics are in a containment relationship
   isContainedWithinObject(poly1, poly2) {
     // Only judge whether the original image contains the target image
-    return poly2.isContainedWithinObject(poly1)
+    return poly2.isContainedWithinObject(poly1, false, true)
   }
 
   editPolygon(poly) {

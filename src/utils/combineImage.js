@@ -25,13 +25,14 @@ class CombineImage {
 
   multiUnion(originPolyArr, targetPoly, callback) {
     let nowPoly = targetPoly;
-
+    console.log(9, originPolyArr)
     for(let i = 0, len = originPolyArr.length; i < len; i++) {
       const newPoint = this.union(
         originPolyArr[i].get("points"),
         nowPoly.get('points')
       );
-      nowPoly = callback(newPoint);
+      console.log(i, newPoint)
+      nowPoly = callback(newPoint[0]);
     }
     return nowPoly
   }
@@ -88,7 +89,6 @@ class CombineImage {
       const poly = polygon.getInnerPoly(i);
       const vertices = this.getPolygonVertices(poly);
 
-      console.log(89888, poly,  vertices)
       arr.push(vertices);
     }
     return arr
