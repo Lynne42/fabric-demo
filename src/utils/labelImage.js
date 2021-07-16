@@ -339,7 +339,6 @@ class LabelImage {
 
       let targetHole = nowPoly;
 
-
       if(holeRelationshipList.length) {
         // 与 hole 并集
         targetHole = this.combineImage.multiUnion(holeRelationshipList, nowPoly, (point) => this.drawImage.generatePolygon(point, {
@@ -450,7 +449,7 @@ class LabelImage {
     const { polygonActiveShape } = this.Arrays.polygon;
     const startPoint = polygonActiveShape.get("points")[0];
     const currentPoint = this.getCurrentPointInfo(options);
-    const radius = 2; // Math.floor(circlePointConfig.radius / 2);
+    const radius = Math.floor(circlePointConfig.radius / 2);
     if (
       Math.abs(startPoint.x - currentPoint.x) <= radius &&
       Math.abs(startPoint.y - currentPoint.y) <= radius

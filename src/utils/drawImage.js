@@ -97,71 +97,6 @@ class DrawImage {
     return group;
   }
 
-  // Get intersecting and non-intersecting or included and non-included graph row data
-  getIntersectsOrContainResult(polyArr, targetPoly, type) {
-    const intersectsArr = [];
-    const resultPoly = [];
-    const fn = type === INTERSECT ? this.isIntersectsWithObject : this.isContainedWithinObject;
-
-    for(let i = 0, len = polyArr.length; i< len; i++) {
-      if(fn(polyArr[i], targetPoly)) {
-        intersectsArr.push(polyArr[i])
-      } else {
-        resultPoly.push(polyArr[i]);
-      }
-    }
-    return {
-      intersectionArr: intersectsArr,
-      noIntersectionArr: resultPoly
-    }
-  }
-
-  getContainResult(polyArr, targetPoly) {
-    const intersectsArr = [];
-    const resultPoly = [];
-    const fn = this.isContainedWithinObject;
-
-    let countPositive = 0;
-    let countNegative = 0;
-
-    for(let i = 0, len = polyArr.length; i< len; i++) {
-      if(fn(polyArr[i], targetPoly)) {
-        resultPoly.push(polyArr[i]);
-        countPositive += 1;
-      } else if(fn(targetPoly, polyArr[i])) {
-
-        resultPoly.push(targetPoly);
-      } else {
-        resultPoly.push(polyArr[i]);
-        resultPoly.push(targetPoly);
-      }
-    }
-    return {
-      polygon: resultPoly,
-      polygonHole: countPositive ? [targetPoly] : []
-    }
-  }
-
-  getContainResultCombine(polyArr, targetPoly) {
-    const intersectsArr = [];
-    const resultPoly = [];
-    let count = 0;
-
-    for(let i = 0, len = polyArr.length; i< len; i++) {
-      if(this.isContainedWithinObject(polyArr[i], targetPoly)) {
-        count +=1;
-      } else if(this.isContainedWithinObject(targetPoly, polyArr[i])) {
-        resultPoly.push(polyArr[i]);
-      } else {
-        resultPoly.push(polyArr[i]);
-      }
-    }
-
-    return {
-      intersectionArr: targetPoly,
-      noIntersectionArr: resultPoly
-    }
-  }
 
   // 判断目标元素与已有元素是否有交集
   getIntersectionByPreAndTarget(perObjects, target) {
@@ -202,13 +137,13 @@ class DrawImage {
 
   // Determine whether there is an intersection between two graphics
   isIntersectsWithObject(poly1, poly2) {
-    return poly1.intersectsWithObject(poly2, false, true)
+    return poly1.intersectsWithObject(poly2)
   }
 
   // Determine whether the two graphics are in a containment relationship
   isContainedWithinObject(poly1, poly2) {
     // Only judge whether the original image contains the target image
-    return poly2.isContainedWithinObject(poly1, false, true)
+    return poly2.isContainedWithinObject(poly1)
   }
 
   editPolygon(poly) {
