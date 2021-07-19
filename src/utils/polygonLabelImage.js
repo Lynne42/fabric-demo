@@ -1,7 +1,5 @@
 import LabelImage from "./labelImage";
 
-const fabric = window.fabric;
-
 class PolygonLabelImage extends LabelImage {
   constructor(options) {
     super(options);
@@ -77,6 +75,8 @@ class PolygonLabelImage extends LabelImage {
   handleToDataURL = () => {
     this.createResultImage();
   };
+
+
 }
 
 export default PolygonLabelImage;

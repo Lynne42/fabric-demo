@@ -143,7 +143,7 @@ class LabelImage {
   handleEvent() {
     const that = this;
     const canvas = this.canvas;
-    //canvas.on("mouse:wheel", that.handleZoom.bind(that));
+    canvas.on("mouse:wheel", that.handleZoom.bind(that));
     // canvas.on("mouse:move", this.handleDrag);
 
     canvas.on("mouse:down", (options) => {
@@ -458,7 +458,6 @@ class LabelImage {
     this.clearObject();
     console.log('result', polysArr)
     polysArr.forEach((np) => {
-      console.log(87878, np)
       if(np) {
         this.canvas.add(np);
       }
@@ -496,7 +495,7 @@ class LabelImage {
     const { polygonActiveShape } = this.Arrays.polygon;
     const startPoint = polygonActiveShape.get("points")[0];
     const currentPoint = this.getCurrentPointInfo(options);
-    const radius = Math.floor(circlePointConfig.radius / 2);
+    const radius = Math.floor(circlePointConfig.radius * 3);
     if (
       Math.abs(startPoint.x - currentPoint.x) <= radius &&
       Math.abs(startPoint.y - currentPoint.y) <= radius
@@ -559,9 +558,18 @@ class LabelImage {
   createResultImage() {
     console.log('down')
 
-    // const dom = document.createElement('canvas');
-    // const nowCanvas = new window.fabric.
-    const result = this.canvas.toDataURL({
+    const dom = document.createElement('canvas');
+    const nowCanvas = new window.fabric.Canvas(dom, {
+      width: 320,
+      height: 320,
+      backgroundColor: '#fff',
+    });
+    const objects = this.canvas.getObjects();
+    objects.forEach(item => {
+      item.fill = 'block';
+      nowCanvas.add(item)
+    })
+    const result = nowCanvas.toDataURL({
       format: "jpeg", // jpeg或png
       quality: 0.8, // 图片质量，仅jpeg时可用
       // 截取指定位置和大小
@@ -572,6 +580,16 @@ class LabelImage {
     });
     console.log('down', result)
     this.Arrays.resultLabelImage = result;
+  }
+
+  moveDragByKey = (type, value) => {
+
+  }
+
+  toGroup() {
+    const objs = this.getObjects();
+    const group = this.drawImage.generateGroup(objs);
+    this.updatePolygon([group])
   }
 
 

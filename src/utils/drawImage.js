@@ -12,7 +12,7 @@ const polygonConfig = {
 
 const circlePointConfig = {
   class: "circle",
-  radius: 10,
+  radius: 3,
   fill: "rgba(86, 151, 255, 0.5)",
   firstFill: "rgba(86, 255, 164, 0.5)",
   strokeWidth: 0.5,
@@ -35,6 +35,14 @@ const lineConfig = {
   hasControls: false,
   evented: false,
 };
+
+const groupConfig = {
+  fill: "rgba(255, 255, 255, 0.4)",
+  stroke: "rgba(255, 255, 255, 0.4)",
+  selectable: true,
+  hasBorders: true,
+  evented: true,
+}
 
 export const INTERSECT = "intersect";
 export const CONTAIN = "contain";
@@ -123,7 +131,7 @@ class DrawImage {
       name: "group",
       originX: "center",
       originY: "center",
-      opacity: 0.5,
+      ...groupConfig,
       ...config,
     });
     return group;

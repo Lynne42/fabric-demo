@@ -10,6 +10,7 @@ const FabricPolygonComponent = () => {
 
   const [canvas, setcanvas] = useState(null);
   const [type, settype] = useState('polygonOn')
+  const [value, setvalue] = useState(2)
 
   useEffect(() => {
     const canvasContent = canvasRef.current;
@@ -37,10 +38,7 @@ const FabricPolygonComponent = () => {
     initCanvas.setImage("https://i.ibb.co/cXKy30V/Rectangle-139.png");
   }, []);
 
-  const handleDrag = () => {
-    settype("dragOn")
-    canvas.resetFeaturesAttr("dragOn", true);
-  };
+
   const handlePolygon = () => {
     settype("polygonOn")
     canvas.resetFeaturesAttr("polygonOn", true);
@@ -54,6 +52,17 @@ const FabricPolygonComponent = () => {
     canvas.resetFeaturesAttr("downOn", true);
     canvas.handleToDataURL();
   };
+
+  const handleDrag = () => {
+    settype("dragOn")
+    canvas.resetFeaturesAttr("dragOn", true);
+
+    canvas.toGroup()
+  };
+
+  const handleDragAction = (type) => {
+    canvas.moveDrag(type, value);
+  }
 
   return (
     <div className="container">
@@ -86,12 +95,26 @@ const FabricPolygonComponent = () => {
             drag
           </button>
 
+
+
           <button
             className={type === "downOn" ? "active" : ""}
             onClick={handleDownload}
           >
             result
           </button>
+
+          <div className="drag-action">
+            <div>
+              <span onClick={() => handleDragAction('up')}>上</span>
+              <span onClick={() => handleDragAction('down')}>下</span>
+            </div>
+            <input type="number" onChange={(e) => setvalue(e.target.value)} value={value}/>
+            <div>
+              <span onClick={() => handleDragAction('left')}>左</span>
+              <span onClick={() => handleDragAction('right')}>右</span>
+            </div>
+          </div>
         </div>
 
       </div>
