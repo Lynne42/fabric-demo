@@ -61,7 +61,7 @@ const FabricPolygonComponent = () => {
   };
 
   const handleDragAction = (type) => {
-    canvas.moveDrag(type, value);
+    canvas.moveDragByKeyboard(type, value);
   }
 
   return (
@@ -106,8 +106,8 @@ const FabricPolygonComponent = () => {
 
           <div className="drag-action">
             <div>
-              <span onClick={() => handleDragAction('up')}>上</span>
-              <span onClick={() => handleDragAction('down')}>下</span>
+              <span onClick={() => handleDragAction('top')}>上</span>
+              <span onClick={() => handleDragAction('bottom')}>下</span>
             </div>
             <input type="number" onChange={(e) => setvalue(e.target.value)} value={value}/>
             <div>

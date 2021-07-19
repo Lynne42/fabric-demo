@@ -39,9 +39,27 @@ const lineConfig = {
 const groupConfig = {
   fill: "rgba(255, 255, 255, 0.4)",
   stroke: "rgba(255, 255, 255, 0.4)",
+  hasControls: true,
   selectable: true,
   hasBorders: true,
   evented: true,
+  lockRotation: true,
+  cornerColor: 'blue',
+  cornerStyle: 'circle',
+  cornerSize: 8,
+  padding: 0,
+  rotatingPointOffset: 4,
+  controlVisible: {
+    'tl': true, 
+    'tr': true, 
+    'br': true, 
+    'bl': true, 
+    'ml': true, 
+    'mt': true, 
+    'mr': true, 
+    'mb': true,
+    'mtr': false,
+  },
 }
 
 export const INTERSECT = "intersect";
@@ -134,6 +152,10 @@ class DrawImage {
       ...groupConfig,
       ...config,
     });
+    const controlVisible = config.controlVisible || groupConfig.controlVisible;
+
+    Object.keys(controlVisible).forEach(item => group.setControlVisible(item, controlVisible[item]))
+    console.log(444, group)
     return group;
   }
 

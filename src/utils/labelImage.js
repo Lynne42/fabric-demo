@@ -291,7 +291,7 @@ class LabelImage {
     canvas.add(nowPoly)
 
     const newPythonsHole = pythonsHole.map(item => {
-      if(drawImage.isContainedWithinObject(nowPoly, item)) {
+      if (drawImage.isContainedWithinObject(nowPoly, item)) {
         return null
       }
       return item
@@ -301,14 +301,14 @@ class LabelImage {
 
     console.log('polygon 关系', relationshipList, noRelationshipList)
 
-    if(!relationshipList.length) {
+    if (!relationshipList.length) {
       this.drawHoleToPolygon([...pythons, nowPoly], [...pythonsHole]);
       // this.updatePolygon([...pythons, nowPoly, ...pythonsHole]);
     } else {
 
       const { relationshipList: holeRelationshipList, noRelationshipList: noHoleRelationshipList, } = drawImage.getIntersectionByPreAndTarget(newPythonsHole, nowPoly);
 
-      if(!holeRelationshipList.length) {
+      if (!holeRelationshipList.length) {
         const targePolygon = this.combineImage.multiUnion(relationshipList, nowPoly, (point) => this.drawImage.generatePolygon(point, config));
         canvas.add(targePolygon);
         // this.updatePolygon([...noRelationshipList, targePolygon, ...noHoleRelationshipList]);
@@ -344,7 +344,7 @@ class LabelImage {
     const { relationshipList, noRelationshipList, } = drawImage.getIntersectionByPreAndTarget(pythons, nowPoly);
 
     console.log('erase1', relationshipList, noRelationshipList)
-    if(!relationshipList.length) {
+    if (!relationshipList.length) {
       this.drawHoleToPolygon(pythons, pythonsHole);
       // this.updatePolygon([...pythons, ...pythonsHole]);
     } else {
@@ -353,21 +353,21 @@ class LabelImage {
 
       let targetHole = nowPoly;
 
-      if(holeRelationshipList.length) {
+      if (holeRelationshipList.length) {
         // 与 hole 并集
         targetHole = this.combineImage.multiUnion(holeRelationshipList, nowPoly, (point) => this.drawImage.generatePolygon(point, config));
         // canvas.add(targetHole)
       }
 
 
-      const { containerList, noContainerList,} = drawImage.getContainerByPreOrTarget(pythons, targetHole);
+      const { containerList, noContainerList, } = drawImage.getContainerByPreOrTarget(pythons, targetHole);
 
       console.log('erase2', containerList, noContainerList)
 
-      if(containerList.length) {
+      if (containerList.length) {
 
         // this.updatePolygon([...containerList, ...noContainerList, ...noRelationshipList, ...noHoleRelationshipList, targetHole]);
-        this.drawHoleToPolygon([...containerList, ...noContainerList, ...noRelationshipList], [ ...noHoleRelationshipList, targetHole]);
+        this.drawHoleToPolygon([...containerList, ...noContainerList, ...noRelationshipList], [...noHoleRelationshipList, targetHole]);
 
       } else {
 
@@ -389,13 +389,13 @@ class LabelImage {
     const { isContainedWithinObject, isIntersectsWithObject } = this.drawImage;
     let arr = [];
 
-    for(let i = 0, len = polygons.length; i < len; i++) {
-      for(let j = 0, len1 = polygonsHole.length; j < len1; j++) {
-        if(isContainedWithinObject(polygons[i], polygonsHole[j])) {
+    for (let i = 0, len = polygons.length; i < len; i++) {
+      for (let j = 0, len1 = polygonsHole.length; j < len1; j++) {
+        if (isContainedWithinObject(polygons[i], polygonsHole[j])) {
           arr.push(polygons[i]);
           arr.push(polygonsHole[j]);
           continue
-        } else if(isIntersectsWithObject(polygons[i], polygonsHole[j])) {
+        } else if (isIntersectsWithObject(polygons[i], polygonsHole[j])) {
           const resultPoints = this.combineImage.difference(polygons[i], polygonsHole[j]);
           arr.push(this.drawImage.generatePolygon(resultPoints, config))
         } else {
@@ -415,7 +415,7 @@ class LabelImage {
 
     objs.forEach(item => {
       pythons.push(this.drawImage.generatePolygon(item.get('points')))
-      if(item.holes) {
+      if (item.holes) {
         item.holes.forEach(hole => {
           pythonsHole.push(this.drawImage.generatePolygon(hole))
         })
@@ -427,23 +427,23 @@ class LabelImage {
     }
   }
 
+  // 生成 polygon abd hole
   drawHoleToPolygon(polygons, holes) {
     console.log('drawHoleToPolygon', polygons, holes)
     const resultPoint = [];
-    for(let i = 0, len = polygons.length; i < len; i++) {
+    for (let i = 0, len = polygons.length; i < len; i++) {
       resultPoint[i] = [];
       resultPoint[i].push(polygons[i].get('points'));
-      for(let j = 0, len2 = holes.length; j < len2; j++) {
-        if(this.drawImage.isContainedWithinObject(polygons[i], holes[j])) {
+      for (let j = 0, len2 = holes.length; j < len2; j++) {
+        if (this.drawImage.isContainedWithinObject(polygons[i], holes[j])) {
           resultPoint[i].push(holes[j].get('points'))
         }
       }
     }
 
-    console.log('drawHoleToPolygon', resultPoint)
     let canvasObject = [];
     resultPoint.forEach(item => {
-      if(item.length > 1) {
+      if (item.length > 1) {
         const pro = new this.PolygonHole(item, polygonConfig)
         canvasObject.push(pro)
       } else {
@@ -454,17 +454,19 @@ class LabelImage {
     this.updatePolygon(canvasObject)
   }
 
-  updatePolygon(polysArr=[]) {
+  // 更新canvas
+  updatePolygon(polysArr = []) {
     this.clearObject();
     console.log('result', polysArr)
     polysArr.forEach((np) => {
-      if(np) {
+      if (np) {
         this.canvas.add(np);
       }
     });
     this.canvas.renderAll();
   }
 
+  // 清空canvas
   clearObject() {
     const objs = this.getObjects();
 
@@ -473,6 +475,7 @@ class LabelImage {
     });
   }
 
+  // 组合 所有画布对象 为一组
   generateGroup() {
     const objs = this.canvas.getObjects();
     const group = this.drawImage.generateGroup([...objs], {
@@ -582,13 +585,44 @@ class LabelImage {
     this.Arrays.resultLabelImage = result;
   }
 
-  moveDragByKey = (type, value) => {
-
+  moveDragByKeyboard = (type, value) => {
+    const activeObj = this.getObjects()[0];
+    const { left, top, width, height } = activeObj;
+    console.log(33, activeObj)
+    switch (type) {
+      case 'top':
+        activeObj.set('top', top - value)
+        break;
+      case 'right':
+        activeObj.set('left', left + value);
+        break;
+      case 'bottom':
+        activeObj.set('top', top + value);
+        break;
+      case 'left':
+        activeObj.set('left', left - value);
+        break;
+      default:
+        break;
+    }
+    // let target = transform.target,
+    //       newLeft = x - transform.offsetX,
+    //       newTop = y - transform.offsetY,
+    //       moveX = !target.get('lockMovementX') && target.left !== newLeft,
+    //       moveY = !target.get('lockMovementY') && target.top !== newTop;
+    //   moveX && target.set('left', newLeft);
+    //   moveY && target.set('top', newTop);
+    //   if (moveX || moveY) {
+    //     fireEvent('moving', commonEventInfo(eventData, transform, x, y));
+    //   }
+    //   return moveX || moveY;
+    this.canvas.renderAll();
   }
 
   toGroup() {
     const objs = this.getObjects();
     const group = this.drawImage.generateGroup(objs);
+    group.toActiveSelection();
     this.updatePolygon([group])
   }
 
