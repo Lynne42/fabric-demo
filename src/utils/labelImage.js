@@ -143,7 +143,7 @@ class LabelImage {
   handleEvent() {
     const that = this;
     const canvas = this.canvas;
-    canvas.on("mouse:wheel", that.handleZoom.bind(that));
+    //canvas.on("mouse:wheel", that.handleZoom.bind(that));
     // canvas.on("mouse:move", this.handleDrag);
 
     canvas.on("mouse:down", (options) => {
