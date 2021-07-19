@@ -302,7 +302,7 @@ class LabelImage {
     console.log('polygon 关系', relationshipList, noRelationshipList)
 
     if(!relationshipList.length) {
-      this.drowHoleToPolygon([...pythons, nowPoly], [...pythonsHole]);
+      this.drawHoleToPolygon([...pythons, nowPoly], [...pythonsHole]);
       // this.updatePolygon([...pythons, nowPoly, ...pythonsHole]);
     } else {
 
@@ -312,15 +312,11 @@ class LabelImage {
         const targePolygon = this.combineImage.multiUnion(relationshipList, nowPoly, (point) => this.drawImage.generatePolygon(point, config));
         canvas.add(targePolygon);
         // this.updatePolygon([...noRelationshipList, targePolygon, ...noHoleRelationshipList]);
-        this.drowHoleToPolygon([...noRelationshipList, targePolygon], [...noHoleRelationshipList]);
+        this.drawHoleToPolygon([...noRelationshipList, targePolygon], [...noHoleRelationshipList]);
 
       } else {
         const points = combineImage.multiDifference(holeRelationshipList, nowPoly);
-        const newPolygon = points.map(item => this.drawImage.generatePolygon(item, {
-          fill: 'rgba(255, 255, 255, 0.5)',
-          globalCompositeOperation: 'destination-out',
-          flag: 'polygon-erase-hole',
-        }));
+        const newPolygon = points.map(item => this.drawImage.generatePolygon(item, config));
 
         const targePolygon = this.combineImage.multiUnion(relationshipList, nowPoly, (point) => this.drawImage.generatePolygon(point));
 
@@ -329,7 +325,7 @@ class LabelImage {
         canvas.add(targePolygon);
         // this.updatePolygon([...noRelationshipList, targePolygon, ...noHoleRelationshipList, ...newPolygon]);
 
-        this.drowHoleToPolygon([...noRelationshipList, targePolygon], [...noHoleRelationshipList, ...newPolygon]);
+        this.drawHoleToPolygon([...noRelationshipList, targePolygon], [...noHoleRelationshipList, ...newPolygon]);
       }
     }
 
@@ -339,12 +335,17 @@ class LabelImage {
   // handle area erase combine
   createErasePolygon(nowPoly, config) {
     const { drawImage, canvas } = this;
+
+    // canvas.add(nowPoly)
+
     // 获取画布上 洞 与 图形的各个集合
     const { pythons, pythonsHole, } = this.getPolygonAndHolePopygon();
 
     const { relationshipList, noRelationshipList, } = drawImage.getIntersectionByPreAndTarget(pythons, nowPoly);
+
+    console.log('erase1', relationshipList, noRelationshipList)
     if(!relationshipList.length) {
-      this.drowHoleToPolygon(pythons, pythonsHole);
+      this.drawHoleToPolygon(pythons, pythonsHole);
       // this.updatePolygon([...pythons, ...pythonsHole]);
     } else {
       // 与old hole 并集
@@ -354,24 +355,19 @@ class LabelImage {
 
       if(holeRelationshipList.length) {
         // 与 hole 并集
-        targetHole = this.combineImage.multiUnion(holeRelationshipList, nowPoly, (point) => this.drawImage.generatePolygon(point, {
-          ...config,
-          fill: 'rgba(255, 255, 255, 0.5)',
-          globalCompositeOperation: 'destination-out',
-          flag: 'polygon-erase-hole',
-          type: 'new',
-        }));
-        canvas.add(targetHole)
-      } else {
-        targetHole.flag = 'polygon-erase-hole';
+        targetHole = this.combineImage.multiUnion(holeRelationshipList, nowPoly, (point) => this.drawImage.generatePolygon(point, config));
+        // canvas.add(targetHole)
       }
 
+
       const { containerList, noContainerList,} = drawImage.getContainerByPreOrTarget(pythons, targetHole);
+
+      console.log('erase2', containerList, noContainerList)
 
       if(containerList.length) {
 
         // this.updatePolygon([...containerList, ...noContainerList, ...noRelationshipList, ...noHoleRelationshipList, targetHole]);
-        this.drowHoleToPolygon([...containerList, ...noContainerList, ...noRelationshipList], [ ...noHoleRelationshipList, targetHole]);
+        this.drawHoleToPolygon([...containerList, ...noContainerList, ...noRelationshipList], [ ...noHoleRelationshipList, targetHole]);
 
       } else {
 
@@ -380,9 +376,9 @@ class LabelImage {
         const newPolygon = resultPoint.map(item => this.drawImage.generatePolygon(item, config));
 
         // this.updatePolygon([...newPolygon, ...noRelationshipList, ...noHoleRelationshipList]);
-        newPolygon.forEach(item => canvas.add(item))
+        // newPolygon.forEach(item => canvas.add(item))
 
-        this.drowHoleToPolygon([...newPolygon, ...noRelationshipList], [...noHoleRelationshipList]);
+        this.drawHoleToPolygon([...noRelationshipList, ...newPolygon], [...noHoleRelationshipList]);
 
       }
     }
@@ -431,21 +427,20 @@ class LabelImage {
     }
   }
 
-  drowHoleToPolygon(polygons, holes) {
-    console.log(1, polygons, holes )
-    const { isContainedWithinObject } = this.drawImage;
+  drawHoleToPolygon(polygons, holes) {
+    console.log('drawHoleToPolygon', polygons, holes)
     const resultPoint = [];
     for(let i = 0, len = polygons.length; i < len; i++) {
       resultPoint[i] = [];
       resultPoint[i].push(polygons[i].get('points'));
       for(let j = 0, len2 = holes.length; j < len2; j++) {
-        if(isContainedWithinObject(polygons[i], holes[j])) {
+        if(this.drawImage.isContainedWithinObject(polygons[i], holes[j])) {
           resultPoint[i].push(holes[j].get('points'))
         }
       }
     }
-    console.log(2, resultPoint)
 
+    console.log('drawHoleToPolygon', resultPoint)
     let canvasObject = [];
     resultPoint.forEach(item => {
       if(item.length > 1) {
@@ -455,7 +450,6 @@ class LabelImage {
         canvasObject.push(this.drawImage.generatePolygon(item[0], polygonConfig))
       }
     })
-    console.log(3, canvasObject)
 
     this.updatePolygon(canvasObject)
   }
@@ -563,6 +557,10 @@ class LabelImage {
 
   // create result base64 image
   createResultImage() {
+    console.log('down')
+
+    // const dom = document.createElement('canvas');
+    // const nowCanvas = new window.fabric.
     const result = this.canvas.toDataURL({
       format: "jpeg", // jpeg或png
       quality: 0.8, // 图片质量，仅jpeg时可用
@@ -572,6 +570,7 @@ class LabelImage {
       width: 320,
       height: 320,
     });
+    console.log('down', result)
     this.Arrays.resultLabelImage = result;
   }
 

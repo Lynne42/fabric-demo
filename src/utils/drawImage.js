@@ -36,15 +36,14 @@ const lineConfig = {
   evented: false,
 };
 
-export const INTERSECT = 'intersect'
-export const CONTAIN = 'contain'
+export const INTERSECT = "intersect";
+export const CONTAIN = "contain";
 
 export class PolygonHole extends window.fabric.Polygon {
-
-  constructor(paths, options={}) {
+  constructor(paths, options = {}) {
     const [outer, ...holes] = paths;
     super(outer, options);
-    this.fillRule = 'evenodd';
+    this.fillRule = "evenodd";
     this.holes = holes;
   }
 
@@ -63,8 +62,7 @@ export class PolygonHole extends window.fabric.Polygon {
   }
 
   _render(ctx) {
-
-    if (!(this).commonRender(ctx)) {
+    if (!this.commonRender(ctx)) {
       return;
     }
     ctx.closePath();
@@ -72,7 +70,6 @@ export class PolygonHole extends window.fabric.Polygon {
     this._renderPaintInOrder(ctx);
   }
 }
-
 
 class DrawImage {
   // create canvas
@@ -132,53 +129,70 @@ class DrawImage {
     return group;
   }
 
-
   // 判断目标元素与已有元素是否有交集
   getIntersectionByPreAndTarget(perObjects, target) {
     const relationshipList = [];
     const noRelationshipList = [];
-    perObjects.forEach(item => {
-      if(this.isIntersectsWithObject(item, target)) {
+    perObjects.forEach((item) => {
+      if (this.isIntersectsWithObject(item, target)) {
         relationshipList.push(item);
       } else {
         noRelationshipList.push(item);
       }
-    })
+    });
     return {
       relationshipList,
       noRelationshipList,
-    }
+    };
   }
 
   // 判断目标与已有元素是不是包含关系
   getContainerByPreOrTarget(perObjects, target) {
-    const isContainedWithinObject = this.isContainedWithinObject;
     const containerList = [];
     const noContainerList = [];
-    perObjects.forEach(item => {
-      if(isContainedWithinObject(item, target)) {
+    perObjects.forEach((item) => {
+      if (this.isContainedWithinObject(item, target)) {
         containerList.push(item);
-      } else if(isContainedWithinObject(target, item)) {
+      } else if (this.isContainedWithinObject(target, item)) {
       } else {
         noContainerList.push(item);
       }
-    })
+    });
 
     return {
       containerList,
       noContainerList,
-    }
+    };
   }
 
   // Determine whether there is an intersection between two graphics
   isIntersectsWithObject(poly1, poly2) {
-    return poly1.intersectsWithObject(poly2)
+    return this.polygonPolygon(poly1.get('points'), poly2.get('points'))
+    // return poly1.intersectsWithObject(poly2);
   }
 
   // Determine whether the two graphics are in a containment relationship
+  // isContainedWithinObject(poly1, poly2) {
+  //   // Only judge whether the original image contains the target image
+  //   return poly2.isContainedWithinObject(poly1);
+  // }
   isContainedWithinObject(poly1, poly2) {
-    // Only judge whether the original image contains the target image
-    return poly2.isContainedWithinObject(poly1)
+    const that = this;
+    const a = poly1.get('points');
+    const b = poly2.get('points');
+    let count = 0;
+    // 判断两个多边形的包含关系
+    for (let i = 0, l = b.length; i < l; ++i) {
+      if (that.pointInPolygon(b[i], a)) {
+        count +=1;
+      } else {
+        return false
+      }
+    }
+    if(count >= b.length) {
+      return true
+    }
+    return false
   }
 
   editPolygon(poly) {
@@ -268,6 +282,87 @@ class DrawImage {
   }
 
 
+  polygonPolygon(a, b) {
+    const that = this;
+    // a的每条边与b的每条边做相交检测
+    for (let i = 0, l = a.length; i < l; ++i) {
+      let a1 = a[i];
+      let a2 = a[(i + 1) % l];
+
+      if (that.linePolygon(a1, a2, b)) return true;
+    }
+
+    // 判断两个多边形的包含关系
+    for (let i = 0, l = b.length; i < l; ++i) {
+      if (that.pointInPolygon(b[i], a)) return true;
+    }
+
+    // 判断两个多边形的包含关系
+    for (let i = 0, l = a.length; i < l; ++i) {
+      if (that.pointInPolygon(a[i], b)) return true;
+    }
+
+    return false;
+  }
+  linePolygon(a1, a2, b) {
+    const that = this;
+    const length = b.length;
+
+    for (let i = 0; i < length; ++i) {
+      let b1 = b[i];
+      let b2 = b[(i + 1) % length];
+
+      if (that.lineLine(a1, a2, b1, b2)) return true;
+    }
+
+    return false;
+  }
+  pointInPolygon(point, polygon) {
+    //* 射线法判断点是否在多边形内
+    //* 点射线（向右水平）与多边形相交点的个数为奇数则认为该点在多边形内
+    //* 点射线（向右水平）与多边形相交点的个数为偶数则认为该点不在多边形内
+    let inside = false;
+    let x = point.x;
+    let y = point.y;
+
+    // use some raycasting to test hits
+    // https://github.com/substack/point-in-polygon/blob/master/index.js
+    let length = polygon.length;
+
+    for (let i = 0, j = length - 1; i < length; j = i++) {
+      let xi = polygon[i].x,
+        yi = polygon[i].y,
+        xj = polygon[j].x,
+        yj = polygon[j].y,
+        intersect =
+          yi > y !== yj > y && x < ((xj - xi) * (y - yi)) / (yj - yi) + xi;
+      // (yi > y) !== (yj > y)表示此条边的两个端点的y值一个大于这个点的y一个小于这个点的y
+      //  (x < (xj - xi) * (y - yi) / (yj - yi) + xi) 这个看起来像是求投影呢，还没搞明白
+      if (intersect) inside = !inside;
+    }
+
+    return inside;
+  }
+
+  lineLine(a1, a2, b1, b2) {
+    // b1->b2向量 与 a1->b1向量的向量积
+    let ua_t = (b2.x - b1.x) * (a1.y - b1.y) - (b2.y - b1.y) * (a1.x - b1.x);
+    // a1->a2向量 与 a1->b1向量的向量积
+    let ub_t = (a2.x - a1.x) * (a1.y - b1.y) - (a2.y - a1.y) * (a1.x - b1.x);
+    // a1->a2向量 与 b1->b2向量的向量积
+    let u_b = (b2.y - b1.y) * (a2.x - a1.x) - (b2.x - b1.x) * (a2.y - a1.y);
+    // u_b == 0时，角度为0或者180 平行或者共线不属于相交
+    if (u_b !== 0) {
+      let ua = ua_t / u_b;
+      let ub = ub_t / u_b;
+
+      if (0 <= ua && ua <= 1 && 0 <= ub && ub <= 1) {
+        return true;
+      }
+    }
+
+    return false;
+  }
 }
 
 export default DrawImage;
