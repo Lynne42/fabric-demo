@@ -39,7 +39,7 @@ const lineConfig = {
 export const INTERSECT = 'intersect'
 export const CONTAIN = 'contain'
 
-export class PolygonPro extends window.fabric.Polygon {
+export class PolygonHole extends window.fabric.Polygon {
 
   constructor(paths, options={}) {
     const [outer, ...holes] = paths;

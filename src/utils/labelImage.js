@@ -1,5 +1,5 @@
 import DrawImage, {
-  PolygonPro,
+  PolygonHole,
   polygonConfig,
   circlePointConfig,
   lineConfig,
@@ -14,7 +14,7 @@ class LabelImage {
     this.drawImage = new DrawImage();
     this.combineImage = new CombineImage();
 
-    this.PolygonPro = PolygonPro;
+    this.PolygonHole = PolygonHole;
 
     // 画布节点
     this.canvas = this.drawImage.createCanvas(
@@ -283,14 +283,13 @@ class LabelImage {
 
   // handle area select combine
   createCombinePolygon(nowPoly, config) {
-    const { drawImage, combineImage, Features, canvas } = this;
-
-    console.log(1, Features, nowPoly)
+    const { drawImage, combineImage, canvas } = this;
 
     // 获取画布上 洞 与 图形的各个集合
-    const { pythons, pythonsHole, } = this.transformObjectToGroupByType();
+    const { pythons, pythonsHole, } = this.getPolygonAndHolePopygon();
+
     canvas.add(nowPoly)
-    console.log(2, pythons, pythonsHole)
+
     const newPythonsHole = pythonsHole.map(item => {
       if(drawImage.isContainedWithinObject(nowPoly, item)) {
         return null
@@ -303,13 +302,18 @@ class LabelImage {
     console.log('polygon 关系', relationshipList, noRelationshipList)
 
     if(!relationshipList.length) {
-      this.updatePolygon([...pythons, nowPoly, ...pythonsHole]);
+      this.drowHoleToPolygon([...pythons, nowPoly], [...pythonsHole]);
+      // this.updatePolygon([...pythons, nowPoly, ...pythonsHole]);
     } else {
 
       const { relationshipList: holeRelationshipList, noRelationshipList: noHoleRelationshipList, } = drawImage.getIntersectionByPreAndTarget(newPythonsHole, nowPoly);
+
       if(!holeRelationshipList.length) {
-        const targePolygon = this.combineImage.multiUnion(relationshipList, nowPoly, (point) => this.drawImage.generatePolygon(point));
-        this.updatePolygon([...noRelationshipList, targePolygon, ...noHoleRelationshipList]);
+        const targePolygon = this.combineImage.multiUnion(relationshipList, nowPoly, (point) => this.drawImage.generatePolygon(point, config));
+        canvas.add(targePolygon);
+        // this.updatePolygon([...noRelationshipList, targePolygon, ...noHoleRelationshipList]);
+        this.drowHoleToPolygon([...noRelationshipList, targePolygon], [...noHoleRelationshipList]);
+
       } else {
         const points = combineImage.multiDifference(holeRelationshipList, nowPoly);
         const newPolygon = points.map(item => this.drawImage.generatePolygon(item, {
@@ -317,8 +321,15 @@ class LabelImage {
           globalCompositeOperation: 'destination-out',
           flag: 'polygon-erase-hole',
         }));
+
         const targePolygon = this.combineImage.multiUnion(relationshipList, nowPoly, (point) => this.drawImage.generatePolygon(point));
-        this.updatePolygon([...noRelationshipList, targePolygon, ...noHoleRelationshipList, ...newPolygon]);
+
+        newPolygon.forEach(item => canvas.add(item))
+
+        canvas.add(targePolygon);
+        // this.updatePolygon([...noRelationshipList, targePolygon, ...noHoleRelationshipList, ...newPolygon]);
+
+        this.drowHoleToPolygon([...noRelationshipList, targePolygon], [...noHoleRelationshipList, ...newPolygon]);
       }
     }
 
@@ -327,14 +338,14 @@ class LabelImage {
 
   // handle area erase combine
   createErasePolygon(nowPoly, config) {
-    const { drawImage } = this;
-
+    const { drawImage, canvas } = this;
     // 获取画布上 洞 与 图形的各个集合
-    const { pythons, pythonsHole, } = this.transformObjectToGroupByType();
+    const { pythons, pythonsHole, } = this.getPolygonAndHolePopygon();
 
     const { relationshipList, noRelationshipList, } = drawImage.getIntersectionByPreAndTarget(pythons, nowPoly);
     if(!relationshipList.length) {
-      this.updatePolygon([...pythons, ...pythonsHole]);
+      this.drowHoleToPolygon(pythons, pythonsHole);
+      // this.updatePolygon([...pythons, ...pythonsHole]);
     } else {
       // 与old hole 并集
       const { relationshipList: holeRelationshipList, noRelationshipList: noHoleRelationshipList, } = drawImage.getIntersectionByPreAndTarget(pythonsHole, nowPoly);
@@ -350,7 +361,7 @@ class LabelImage {
           flag: 'polygon-erase-hole',
           type: 'new',
         }));
-
+        canvas.add(targetHole)
       } else {
         targetHole.flag = 'polygon-erase-hole';
       }
@@ -359,12 +370,19 @@ class LabelImage {
 
       if(containerList.length) {
 
-        this.updatePolygon([...containerList, ...noContainerList, ...noRelationshipList, ...noHoleRelationshipList, targetHole]);
+        // this.updatePolygon([...containerList, ...noContainerList, ...noRelationshipList, ...noHoleRelationshipList, targetHole]);
+        this.drowHoleToPolygon([...containerList, ...noContainerList, ...noRelationshipList], [ ...noHoleRelationshipList, targetHole]);
 
       } else {
+
+        console.log('这里')
         const resultPoint = this.combineImage.multiDifference(relationshipList, targetHole);
-        const newPolygon = resultPoint.map(item => this.drawImage.generatePolygon(item));
-        this.updatePolygon([...newPolygon, ...noRelationshipList, ...noHoleRelationshipList]);
+        const newPolygon = resultPoint.map(item => this.drawImage.generatePolygon(item, config));
+
+        // this.updatePolygon([...newPolygon, ...noRelationshipList, ...noHoleRelationshipList]);
+        newPolygon.forEach(item => canvas.add(item))
+
+        this.drowHoleToPolygon([...newPolygon, ...noRelationshipList], [...noHoleRelationshipList]);
 
       }
     }
@@ -392,16 +410,19 @@ class LabelImage {
     return arr
   }
 
-  // determine python or python hole
-  transformObjectToGroupByType() {
+
+  // 获取 polygon and hole
+  getPolygonAndHolePopygon() {
     const objs = this.getObjects();
     let pythons = [];
     let pythonsHole = [];
+
     objs.forEach(item => {
-      if(item.flag && item.flag.startsWith('polygon-erase')) {
-        pythonsHole.push(item);
-      } else {
-        pythons.push(item);
+      pythons.push(this.drawImage.generatePolygon(item.get('points')))
+      if(item.holes) {
+        item.holes.forEach(hole => {
+          pythonsHole.push(this.drawImage.generatePolygon(hole))
+        })
       }
     })
     return {
@@ -410,10 +431,40 @@ class LabelImage {
     }
   }
 
+  drowHoleToPolygon(polygons, holes) {
+    console.log(1, polygons, holes )
+    const { isContainedWithinObject } = this.drawImage;
+    const resultPoint = [];
+    for(let i = 0, len = polygons.length; i < len; i++) {
+      resultPoint[i] = [];
+      resultPoint[i].push(polygons[i].get('points'));
+      for(let j = 0, len2 = holes.length; j < len2; j++) {
+        if(isContainedWithinObject(polygons[i], holes[j])) {
+          resultPoint[i].push(holes[j].get('points'))
+        }
+      }
+    }
+    console.log(2, resultPoint)
+
+    let canvasObject = [];
+    resultPoint.forEach(item => {
+      if(item.length > 1) {
+        const pro = new this.PolygonHole(item, polygonConfig)
+        canvasObject.push(pro)
+      } else {
+        canvasObject.push(this.drawImage.generatePolygon(item[0], polygonConfig))
+      }
+    })
+    console.log(3, canvasObject)
+
+    this.updatePolygon(canvasObject)
+  }
+
   updatePolygon(polysArr=[]) {
     this.clearObject();
     console.log('result', polysArr)
     polysArr.forEach((np) => {
+      console.log(87878, np)
       if(np) {
         this.canvas.add(np);
       }
