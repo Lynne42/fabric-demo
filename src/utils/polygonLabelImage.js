@@ -67,7 +67,7 @@ class PolygonLabelImage extends LabelImage {
         options,
         type: "polygon-erase",
         configCircle: {
-          fill: "rgba(255, 86, 86, 0.5)",
+          fill: "rgba(255, 86, 86, 0.3)",
           firstFill: "rgba(255, 86, 218, 0.5)",
         },
       });

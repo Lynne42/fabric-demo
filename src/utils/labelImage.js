@@ -1,4 +1,5 @@
 import DrawImage, {
+  PolygonPro,
   polygonConfig,
   circlePointConfig,
   lineConfig,
@@ -12,6 +13,8 @@ class LabelImage {
   constructor(options) {
     this.drawImage = new DrawImage();
     this.combineImage = new CombineImage();
+
+    this.PolygonPro = PolygonPro;
 
     // 画布节点
     this.canvas = this.drawImage.createCanvas(
@@ -261,9 +264,8 @@ class LabelImage {
     });
 
     canvas.remove(polygonActiveShape).remove(polygonActiveLine);
-    const polygon = this.drawImage.generatePolygon(points, config);
 
-    console.log('create polygon', polygon)
+    const polygon = this.drawImage.generatePolygon(points, config);
 
     if (type === "polygon") {
 
@@ -275,6 +277,7 @@ class LabelImage {
     }
 
     // this.resetFeaturesAttr("polygonOn", false);
+    console.log(this.canvas.getObjects())
     this.resetPolygonData();
   }
 
@@ -309,7 +312,6 @@ class LabelImage {
         this.updatePolygon([...noRelationshipList, targePolygon, ...noHoleRelationshipList]);
       } else {
         const points = combineImage.multiDifference(holeRelationshipList, nowPoly);
-        console.log(22, points)
         const newPolygon = points.map(item => this.drawImage.generatePolygon(item, {
           fill: 'rgba(255, 255, 255, 0.5)',
           globalCompositeOperation: 'destination-out',

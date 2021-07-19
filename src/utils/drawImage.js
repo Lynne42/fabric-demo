@@ -39,6 +39,41 @@ const lineConfig = {
 export const INTERSECT = 'intersect'
 export const CONTAIN = 'contain'
 
+export class PolygonPro extends window.fabric.Polygon {
+
+  constructor(paths, options={}) {
+    const [outer, ...holes] = paths;
+    super(outer, options);
+    this.fillRule = 'evenodd';
+    this.holes = holes;
+  }
+
+  holesRender(ctx) {
+    const { x, y } = this.pathOffset;
+
+    this.holes.forEach((hole) => {
+      const len = hole.length;
+      ctx.moveTo(hole[0].x - x, hole[0].y - y);
+      for (let i = 0; i < len; i += 1) {
+        const point = hole[i];
+        ctx.lineTo(point.x - x, point.y - y);
+      }
+      ctx.closePath();
+    });
+  }
+
+  _render(ctx) {
+
+    if (!(this).commonRender(ctx)) {
+      return;
+    }
+    ctx.closePath();
+    this.holesRender(ctx);
+    this._renderPaintInOrder(ctx);
+  }
+}
+
+
 class DrawImage {
   // create canvas
   createCanvas(canvasDom, config = {}) {
