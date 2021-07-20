@@ -46,7 +46,12 @@ class LabelImage {
     this.mouseY = 0;
 
     // drag 前 group rect 坐标
-    
+    this.originX = 0;
+    this.originY = 0;
+
+    // drag 后 group rect 与 drag 前 group rect 坐标 的偏移量
+    this.offsetOriginX = 0;
+    this.offsetOriginY = 0;
 
     // 拖动过程中，鼠标前一次移动的横坐标
     this.prevX = 0;
@@ -56,7 +61,6 @@ class LabelImage {
     this.scale = 1;
 
     this.Arrays = {
-
       // 生成标注图片结果
       resultLabelImage: null,
 
@@ -130,6 +134,20 @@ class LabelImage {
 
       this.canvas.relativePan(delta);
     }
+  }
+
+  // 设置 drag前 前 group rect 坐标
+  setOriginGroupInfo(groupObject) {
+    const { left, top } = groupObject.getBoundingRect();
+    this.originX = left;
+    this.originY = top;
+  }
+
+  // 设置 drag 后 group rect 与 drag 前 group rect 坐标 的偏移量
+  setOriginGroupOffsetInfo(groupObject) {
+    const { left, top } = groupObject.getBoundingRect();
+    this.offsetOriginX = left - this.originX;
+    this.offsetOriginY = top - this.originY;
   }
 
   // 设置 Features
@@ -243,7 +261,7 @@ class LabelImage {
     // 获取画布上 洞 与 图形的各个集合
     const { pythons, pythonsHole } = this.getPolygonAndHolePopygon();
 
-    console.log(23222, pythons, pythonsHole)
+    console.log(23222, pythons, pythonsHole);
     canvas.add(nowPoly);
 
     const newPythonsHole = pythonsHole
@@ -398,7 +416,7 @@ class LabelImage {
   getPolygonAndHolePopygon() {
     const objs = this.getObjects();
 
-    console.log('getPolygon', objs)
+    console.log("getPolygon", objs);
     let pythons = [];
     let pythonsHole = [];
 
@@ -627,6 +645,8 @@ class LabelImage {
     this.updatePolygon([group]);
 
     this.canvas.setActiveObject(group);
+
+    this.setOriginGroupInfo(group);
   }
 
   splitGroup() {
@@ -634,16 +654,40 @@ class LabelImage {
     const objs = that.getObjects("group");
 
     if (objs && objs.length) {
-      const arr = [];
-      objs.forEach((item) => {
-        const subObjects = item.getObjects();
-        item.destroy();
-        that.canvas.remove(item);
-        arr.push(...subObjects);
-      });
-      console.log('组', arr)
-      that.updatePolygon(arr);
+
+      // 始终合成一个组， 所以不用循环
+      const group = objs[0];
+
+      // 设置 当前组与 未移动前的 组的偏移量
+      that.setOriginGroupOffsetInfo(group);
+
+      const subObjects = group.getObjects();
+      group.destroy();
+      that.canvas.remove(group);
+
+      console.log("组", subObjects);
+
+      // 根据偏移量， 重写 polygon的 点
+      subObjects.forEach(object => {
+
+        const nowPoint = that.resetPoints(object.get('points'), that.offsetOriginX, that.offsetOriginY)
+
+        if(object.holes && object.holes.length) {
+          const holePointArr = object.holes.map(hole => that.resetPoints(hole, that.offsetOriginX, that.offsetOriginY))
+          const pro = new this.PolygonHole([nowPoint], polygonConfig);
+        }
+      })
+
+      that.updatePolygon(subObjects);
     }
+  }
+
+  resetPoints(pointsArr, x, y) {
+    const nowPoint = pointsArr.map(itemPoint => ({
+      x: itemPoint.x + x,
+      y: itemPoint.y + y,
+    }))
+    return nowPoint
   }
 
   moveDragByKeyboard = (type, value) => {
