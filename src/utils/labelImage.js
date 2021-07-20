@@ -2,9 +2,6 @@ import DrawImage, {
   PolygonHole,
   polygonConfig,
   circlePointConfig,
-  lineConfig,
-  INTERSECT,
-  CONTAIN,
 } from "./drawImage";
 
 import CombineImage from "./combineImage";
@@ -34,7 +31,8 @@ class LabelImage {
     this.iWidth = 0;
     // 图片高度
     this.iHeight = 0;
-
+    // 缩放步长
+    this.zoomSpace = 0.1;
     // 最小缩放比例
     this.minScale = 1;
     // 最大缩放比例
@@ -115,13 +113,17 @@ class LabelImage {
   // 缩放
   handleZoom(opt) {
     const delta = opt.e.deltaY;
-    let zoom = (delta > 0 ? -0.1 : 0.1) + this.canvas.getZoom();
+    let zoom = (delta > 0 ? -this.zoomSpace : this.zoomSpace) + this.canvas.getZoom();
     zoom = Math.max(this.minScale, zoom);
     zoom = Math.min(this.maxScale, zoom);
+
+    console.log(11, zoom, opt.e.offsetX, opt.e.offsetY)
+    
     this.canvas.zoomToPoint({ x: opt.e.offsetX, y: opt.e.offsetY }, zoom);
     this.scale = zoom;
     opt.e.preventDefault();
     opt.e.stopPropagation();
+    this.canvas.renderAll();
   }
 
   // 拖拽
@@ -607,22 +609,21 @@ class LabelImage {
     );
   }
 
-  // create result base64 image
+  // download create result base64 image
   createResultImage() {
     const that = this;
     const dom = document.createElement("canvas");
     const nowCanvas = new window.fabric.StaticCanvas(dom, {
-      width: 320,
-      height: 320,
+      width: that.cWidth,
+      height: that.cHeight,
       backgroundColor: "#fff",
     });
-
-    const objects = [].concat(that.canvas.getObjects());
+    
+    const objects = that.canvas.getObjects();
     objects.forEach((nowItem) => {
       nowItem.fill = "block";
       nowCanvas.add(nowItem);
     });
-    console.log(3, nowCanvas.getObjects());
     const result = nowCanvas.toDataURL({
       format: "jpeg", // jpeg或png
       quality: 0.8,
@@ -633,8 +634,14 @@ class LabelImage {
     });
     console.log("down", result);
     that.Arrays.resultLabelImage = result;
+
+    nowCanvas.clear();
+    objects.forEach((nowItem) => {
+      nowItem.fill = polygonConfig.fill;
+    });
   }
 
+  // 合并组
   toGroup() {
     const objs = this.getObjects();
 
@@ -649,6 +656,7 @@ class LabelImage {
     this.setOriginGroupInfo(group);
   }
 
+  // 分离组
   splitGroup() {
     const that = this;
     const objs = that.getObjects("group");
@@ -666,19 +674,23 @@ class LabelImage {
       that.canvas.remove(group);
 
       console.log("组", subObjects);
-
+      const resultPolygon = [];
       // 根据偏移量， 重写 polygon的 点
       subObjects.forEach(object => {
 
         const nowPoint = that.resetPoints(object.get('points'), that.offsetOriginX, that.offsetOriginY)
 
         if(object.holes && object.holes.length) {
-          const holePointArr = object.holes.map(hole => that.resetPoints(hole, that.offsetOriginX, that.offsetOriginY))
-          const pro = new this.PolygonHole([nowPoint], polygonConfig);
+          const holePointArr = object.holes.map(
+            hole => that.resetPoints(hole, that.offsetOriginX, that.offsetOriginY)
+          )
+          const pro = new that.PolygonHole([nowPoint, ...holePointArr], polygonConfig);
+          resultPolygon.push(pro);
+        } else {
+          resultPolygon.push(that.drawImage.generatePolygon(nowPoint, polygonConfig));
         }
       })
-
-      that.updatePolygon(subObjects);
+      that.updatePolygon(resultPolygon);
     }
   }
 
@@ -690,6 +702,7 @@ class LabelImage {
     return nowPoint
   }
 
+  // drag by btn
   moveDragByKeyboard = (type, value) => {
     const { canvas, cHeight, cWidth } = this;
     const activeObj = canvas.getObjects()[0];
@@ -732,12 +745,12 @@ class LabelImage {
     this.canvas.renderAll();
   };
 
+  // 检查边界，避免元素拖出边界
   checkBoudningBox(e) {
     const obj = e.target;
     if (!obj) {
       return;
     }
-    console.log(obj);
     obj.setCoords();
 
     const objBoundingBox = obj.getBoundingRect();

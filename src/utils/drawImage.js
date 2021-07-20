@@ -1,4 +1,4 @@
-const polygonConfig = {
+export const polygonConfig = {
   class: "polygon",
   fill: "rgba(255, 255, 255, 0.4)",
   stroke: "rgba(255, 255, 255, 0.4)",
@@ -9,7 +9,7 @@ const polygonConfig = {
   evented: false,
 };
 
-const circlePointConfig = {
+export const circlePointConfig = {
   class: "circle",
   radius: 3,
   fill: "rgba(86, 151, 255, 0.5)",
@@ -22,7 +22,7 @@ const circlePointConfig = {
   originY: "center",
 };
 
-const lineConfig = {
+export const lineConfig = {
   class: "line",
   strokeWidth: 1,
   fill: "blue",
@@ -60,9 +60,6 @@ const groupConfig = {
     'mtr': false,
   },
 }
-
-export const INTERSECT = "intersect";
-export const CONTAIN = "contain";
 
 export class PolygonHole extends window.fabric.Polygon {
   constructor(paths, options = {}) {
@@ -297,7 +294,7 @@ class DrawImage {
           fabricObject.calcTransformMatrix()
         ),
         actionPerformed = fn(eventData, transform, x, y),
-        newDim = fabricObject._setPositionDimensions({}),
+        // newDim = fabricObject._setPositionDimensions({}),
         polygonBaseSize = fabricObject._getNonTransformedDimensions(),
         newX =
           (fabricObject.points[anchorIndex].x - fabricObject.pathOffset.x) /
@@ -395,5 +392,3 @@ class DrawImage {
 }
 
 export default DrawImage;
-
-export { polygonConfig, circlePointConfig, lineConfig };
