@@ -25,85 +25,40 @@ class LabelImage {
 
     this.bgImg = null;
 
+    // canvas width
     this.cWidth = options.canvas.clientWidth;
 
+    // canvas height
     this.cHeight = options.canvas.clientHeight;
 
     this.iWidth = 0;
     // 图片高度
     this.iHeight = 0;
-    // 图片拖拽至边缘最小显示
-    this.appearSize = 180;
-    // 缩放布进
-    this.scaleStep = 0.02;
+
     // 最小缩放比例
     this.minScale = 1;
     // 最大缩放比例
     this.maxScale = 8;
-    // 图片在画板中的横坐标
-    this.x = 0;
-    // 图片在画板中的纵坐标
-    this.y = 0;
+
     // 鼠标当前画板中的横坐标
     this.mouseX = 0;
     // 鼠标当前画板中的纵坐标
     this.mouseY = 0;
+
+    // drag 前 group rect 坐标
+    
+
     // 拖动过程中，鼠标前一次移动的横坐标
     this.prevX = 0;
     // 拖动过程中，鼠标前一次移动的纵坐标
     this.prevY = 0;
     // 缩放比例
     this.scale = 1;
-    // 鼠标在图片中的横坐标
-    this.ix = 0;
-    // 鼠标在图片中的纵坐标
-    this.iy = 0;
-
-    // 绘制多边形的圆点半径
-    this.radius = 6;
-
-    // 绘制线段宽度
-    this.lineWidth = 1;
-
-    //绘制区域模块透明度
-    this.opacity = 0.4;
-
-    // 定时器
-    this.timer = null;
-
-    // 结果是否被修改
-    this.isModify = false;
-
-    // 是否移动图像标注圆点
-    this.isDrogCircle = false;
-
-    // 当前点击圆点index
-    this.snapCircleIndex = 0;
-
-    // 用于在拖拽或者缩放时，让绘制至存储面板的数据，只绘制一次
-    this.drawFlag = true;
-
-    // 监听滚动条缩放是否结束的定时器
-    this.mousewheelTimer = null;
-
-    // 历史记录下标
-    this.historyIndex = 0;
 
     this.Arrays = {
-      // 标定历史保存标签记录
-      history: [],
-
-      // 图片标注展示数据集
-      imageAnnotateShower: [],
-
-      // 图片标注存储数据集
-      imageAnnotateMemory: [],
 
       // 生成标注图片结果
       resultLabelImage: null,
-
-      // 标注集操作 result list index
-      resultIndex: 0,
 
       // 多边形 标注点，线， 多边形集
       polygon: {
@@ -149,6 +104,8 @@ class LabelImage {
     canvas.on("mouse:down", (options) => {
       that.handleMouseDown(options);
     });
+
+    canvas.on("object:moving", this.checkBoudningBox.bind(that));
   }
 
   // 缩放
@@ -186,7 +143,8 @@ class LabelImage {
   // 绘制多边形 点 线
   addPolygonPoint({ options, type = "polygon", configCircle = {} }) {
     const { canvas, Arrays } = this;
-    let { polygonPointArray, polygonLineArray, polygonActiveShape } = Arrays.polygon;
+    let { polygonPointArray, polygonLineArray, polygonActiveShape } =
+      Arrays.polygon;
 
     const arr = polygonPointArray || [];
 
@@ -268,16 +226,13 @@ class LabelImage {
     const polygon = this.drawImage.generatePolygon(points, config);
 
     if (type === "polygon") {
-
       this.createCombinePolygon(polygon, config);
-
     } else if (type === "polygon-erase") {
-
-      this.createErasePolygon(polygon, config)
+      this.createErasePolygon(polygon, config);
     }
 
     // this.resetFeaturesAttr("polygonOn", false);
-    console.log(this.canvas.getObjects())
+    console.log(this.canvas.getObjects());
     this.resetPolygonData();
   }
 
@@ -286,100 +241,130 @@ class LabelImage {
     const { drawImage, combineImage, canvas } = this;
 
     // 获取画布上 洞 与 图形的各个集合
-    const { pythons, pythonsHole, } = this.getPolygonAndHolePopygon();
+    const { pythons, pythonsHole } = this.getPolygonAndHolePopygon();
 
-    canvas.add(nowPoly)
+    console.log(23222, pythons, pythonsHole)
+    canvas.add(nowPoly);
 
-    const newPythonsHole = pythonsHole.map(item => {
-      if (drawImage.isContainedWithinObject(nowPoly, item)) {
-        return null
-      }
-      return item
-    }).filter(item => !!item)
+    const newPythonsHole = pythonsHole
+      .map((item) => {
+        if (drawImage.isContainedWithinObject(nowPoly, item)) {
+          return null;
+        }
+        return item;
+      })
+      .filter((item) => !!item);
 
-    const { relationshipList, noRelationshipList, } = drawImage.getIntersectionByPreAndTarget(pythons, nowPoly);
+    const { relationshipList, noRelationshipList } =
+      drawImage.getIntersectionByPreAndTarget(pythons, nowPoly);
 
-    console.log('polygon 关系', relationshipList, noRelationshipList)
+    console.log("polygon 关系", relationshipList, noRelationshipList);
 
     if (!relationshipList.length) {
       this.drawHoleToPolygon([...pythons, nowPoly], [...pythonsHole]);
       // this.updatePolygon([...pythons, nowPoly, ...pythonsHole]);
     } else {
-
-      const { relationshipList: holeRelationshipList, noRelationshipList: noHoleRelationshipList, } = drawImage.getIntersectionByPreAndTarget(newPythonsHole, nowPoly);
+      const {
+        relationshipList: holeRelationshipList,
+        noRelationshipList: noHoleRelationshipList,
+      } = drawImage.getIntersectionByPreAndTarget(newPythonsHole, nowPoly);
 
       if (!holeRelationshipList.length) {
-        const targePolygon = this.combineImage.multiUnion(relationshipList, nowPoly, (point) => this.drawImage.generatePolygon(point, config));
+        const targePolygon = this.combineImage.multiUnion(
+          relationshipList,
+          nowPoly,
+          (point) => this.drawImage.generatePolygon(point, config)
+        );
         canvas.add(targePolygon);
         // this.updatePolygon([...noRelationshipList, targePolygon, ...noHoleRelationshipList]);
-        this.drawHoleToPolygon([...noRelationshipList, targePolygon], [...noHoleRelationshipList]);
-
+        this.drawHoleToPolygon(
+          [...noRelationshipList, targePolygon],
+          [...noHoleRelationshipList]
+        );
       } else {
-        const points = combineImage.multiDifference(holeRelationshipList, nowPoly);
-        const newPolygon = points.map(item => this.drawImage.generatePolygon(item, config));
+        const points = combineImage.multiDifference(
+          holeRelationshipList,
+          nowPoly
+        );
+        const newPolygon = points.map((item) =>
+          this.drawImage.generatePolygon(item, config)
+        );
 
-        const targePolygon = this.combineImage.multiUnion(relationshipList, nowPoly, (point) => this.drawImage.generatePolygon(point));
+        const targePolygon = this.combineImage.multiUnion(
+          relationshipList,
+          nowPoly,
+          (point) => this.drawImage.generatePolygon(point)
+        );
 
-        newPolygon.forEach(item => canvas.add(item))
+        newPolygon.forEach((item) => canvas.add(item));
 
         canvas.add(targePolygon);
         // this.updatePolygon([...noRelationshipList, targePolygon, ...noHoleRelationshipList, ...newPolygon]);
 
-        this.drawHoleToPolygon([...noRelationshipList, targePolygon], [...noHoleRelationshipList, ...newPolygon]);
+        this.drawHoleToPolygon(
+          [...noRelationshipList, targePolygon],
+          [...noHoleRelationshipList, ...newPolygon]
+        );
       }
     }
-
   }
-
 
   // handle area erase combine
   createErasePolygon(nowPoly, config) {
-    const { drawImage, canvas } = this;
-
-    // canvas.add(nowPoly)
+    const { drawImage } = this;
 
     // 获取画布上 洞 与 图形的各个集合
-    const { pythons, pythonsHole, } = this.getPolygonAndHolePopygon();
+    const { pythons, pythonsHole } = this.getPolygonAndHolePopygon();
 
-    const { relationshipList, noRelationshipList, } = drawImage.getIntersectionByPreAndTarget(pythons, nowPoly);
+    const { relationshipList, noRelationshipList } =
+      drawImage.getIntersectionByPreAndTarget(pythons, nowPoly);
 
-    console.log('erase1', relationshipList, noRelationshipList)
+    console.log("erase1", relationshipList, noRelationshipList);
     if (!relationshipList.length) {
       this.drawHoleToPolygon(pythons, pythonsHole);
-      // this.updatePolygon([...pythons, ...pythonsHole]);
     } else {
       // 与old hole 并集
-      const { relationshipList: holeRelationshipList, noRelationshipList: noHoleRelationshipList, } = drawImage.getIntersectionByPreAndTarget(pythonsHole, nowPoly);
+      const {
+        relationshipList: holeRelationshipList,
+        noRelationshipList: noHoleRelationshipList,
+      } = drawImage.getIntersectionByPreAndTarget(pythonsHole, nowPoly);
 
       let targetHole = nowPoly;
 
       if (holeRelationshipList.length) {
         // 与 hole 并集
-        targetHole = this.combineImage.multiUnion(holeRelationshipList, nowPoly, (point) => this.drawImage.generatePolygon(point, config));
+        targetHole = this.combineImage.multiUnion(
+          holeRelationshipList,
+          nowPoly,
+          (point) => this.drawImage.generatePolygon(point, config)
+        );
         // canvas.add(targetHole)
       }
 
+      const { containerList, noContainerList } =
+        drawImage.getContainerByPreOrTarget(relationshipList, targetHole);
 
-      const { containerList, noContainerList, } = drawImage.getContainerByPreOrTarget(pythons, targetHole);
-
-      console.log('erase2', containerList, noContainerList)
+      console.log("erase2", containerList, noContainerList);
 
       if (containerList.length) {
-
-        // this.updatePolygon([...containerList, ...noContainerList, ...noRelationshipList, ...noHoleRelationshipList, targetHole]);
-        this.drawHoleToPolygon([...containerList, ...noContainerList, ...noRelationshipList], [...noHoleRelationshipList, targetHole]);
-
+        this.drawHoleToPolygon(
+          [...containerList, ...noContainerList, ...noRelationshipList],
+          [...noHoleRelationshipList, targetHole]
+        );
       } else {
+        console.log("这里");
+        const resultPoint = this.combineImage.multiDifference(
+          relationshipList,
+          targetHole
+        );
+        const newPolygon = resultPoint.map((item) =>
+          this.drawImage.generatePolygon(item, config)
+        );
 
-        console.log('这里')
-        const resultPoint = this.combineImage.multiDifference(relationshipList, targetHole);
-        const newPolygon = resultPoint.map(item => this.drawImage.generatePolygon(item, config));
-
-        // this.updatePolygon([...newPolygon, ...noRelationshipList, ...noHoleRelationshipList]);
-        // newPolygon.forEach(item => canvas.add(item))
-
-        this.drawHoleToPolygon([...noRelationshipList, ...newPolygon], [...noHoleRelationshipList]);
-
+        this.drawHoleToPolygon(
+          [...noRelationshipList, ...newPolygon],
+          [...noHoleRelationshipList]
+        );
       }
     }
   }
@@ -394,76 +379,111 @@ class LabelImage {
         if (isContainedWithinObject(polygons[i], polygonsHole[j])) {
           arr.push(polygons[i]);
           arr.push(polygonsHole[j]);
-          continue
+          continue;
         } else if (isIntersectsWithObject(polygons[i], polygonsHole[j])) {
-          const resultPoints = this.combineImage.difference(polygons[i], polygonsHole[j]);
-          arr.push(this.drawImage.generatePolygon(resultPoints, config))
+          const resultPoints = this.combineImage.difference(
+            polygons[i],
+            polygonsHole[j]
+          );
+          arr.push(this.drawImage.generatePolygon(resultPoints, config));
         } else {
           arr.push(polygons[i]);
         }
       }
     }
-    return arr
+    return arr;
   }
-
 
   // 获取 polygon and hole
   getPolygonAndHolePopygon() {
     const objs = this.getObjects();
+
+    console.log('getPolygon', objs)
     let pythons = [];
     let pythonsHole = [];
 
-    objs.forEach(item => {
-      pythons.push(this.drawImage.generatePolygon(item.get('points')))
+    objs.forEach((item) => {
+      pythons.push(item);
       if (item.holes) {
-        item.holes.forEach(hole => {
-          pythonsHole.push(this.drawImage.generatePolygon(hole))
-        })
+        item.holes.forEach((hole) => {
+          pythonsHole.push(this.drawImage.generatePolygon(hole));
+        });
       }
-    })
+    });
     return {
       pythons,
       pythonsHole,
-    }
+    };
   }
 
   // 生成 polygon abd hole
   drawHoleToPolygon(polygons, holes) {
-    console.log('drawHoleToPolygon', polygons, holes)
+    console.log("drawHoleToPolygon", polygons, holes);
     const resultPoint = [];
     for (let i = 0, len = polygons.length; i < len; i++) {
       resultPoint[i] = [];
-      resultPoint[i].push(polygons[i].get('points'));
+      resultPoint[i].push(polygons[i].get("points"));
+
       for (let j = 0, len2 = holes.length; j < len2; j++) {
         if (this.drawImage.isContainedWithinObject(polygons[i], holes[j])) {
-          resultPoint[i].push(holes[j].get('points'))
+          resultPoint[i].push(holes[j].get("points"));
         }
       }
     }
 
     let canvasObject = [];
-    resultPoint.forEach(item => {
+    resultPoint.forEach((item) => {
       if (item.length > 1) {
-        const pro = new this.PolygonHole(item, polygonConfig)
-        canvasObject.push(pro)
+        const pro = new this.PolygonHole(item, polygonConfig);
+        canvasObject.push(pro);
       } else {
-        canvasObject.push(this.drawImage.generatePolygon(item[0], polygonConfig))
+        canvasObject.push(
+          this.drawImage.generatePolygon(item[0], polygonConfig)
+        );
       }
-    })
+    });
 
-    this.updatePolygon(canvasObject)
+    this.updatePolygon(canvasObject);
   }
 
   // 更新canvas
   updatePolygon(polysArr = []) {
     this.clearObject();
-    console.log('result', polysArr)
+    console.log("result", polysArr);
     polysArr.forEach((np) => {
       if (np) {
         this.canvas.add(np);
       }
     });
+
     this.canvas.renderAll();
+    console.log("result", this.getObjects());
+  }
+
+  // 清除为合成的polygon
+  clearNoPolygon() {
+    const { canvas, Arrays } = this;
+    let {
+      polygonPointArray,
+      polygonLineArray,
+      polygonActiveLine,
+      polygonActiveShape,
+    } = Arrays.polygon;
+    const points = [];
+    polygonPointArray.forEach((point) => {
+      points.push({
+        x: point.left,
+        y: point.top,
+      });
+      canvas.remove(point);
+    });
+
+    polygonLineArray.forEach((line) => {
+      canvas.remove(line);
+    });
+    canvas.remove(polygonActiveShape).remove(polygonActiveLine);
+
+    this.resetPolygonData();
   }
 
   // 清空canvas
@@ -489,8 +509,20 @@ class LabelImage {
   }
 
   // get all graphics objects on the current canvas
-  getObjects() {
-    return this.canvas.getObjects()
+  getObjects(type = "") {
+    if (!type) {
+      return this.canvas.getObjects();
+    } else {
+      return this.canvas
+        .getObjects()
+        .map((item) => {
+          if (item.name === type || item.id === type) {
+            return item;
+          }
+          return null;
+        })
+        .filter((item) => !!item);
+    }
   }
 
   // Determine whether the current point is in a circle
@@ -559,85 +591,112 @@ class LabelImage {
 
   // create result base64 image
   createResultImage() {
-    console.log('down')
-
-    const dom = document.createElement('canvas');
-    const nowCanvas = new window.fabric.Canvas(dom, {
+    const that = this;
+    const dom = document.createElement("canvas");
+    const nowCanvas = new window.fabric.StaticCanvas(dom, {
       width: 320,
       height: 320,
-      backgroundColor: '#fff',
+      backgroundColor: "#fff",
     });
-    const objects = this.canvas.getObjects();
-    objects.forEach(item => {
-      item.fill = 'block';
-      nowCanvas.add(item)
-    })
+
+    const objects = [].concat(that.canvas.getObjects());
+    objects.forEach((nowItem) => {
+      nowItem.fill = "block";
+      nowCanvas.add(nowItem);
+    });
+    console.log(3, nowCanvas.getObjects());
     const result = nowCanvas.toDataURL({
       format: "jpeg", // jpeg或png
-      quality: 0.8, // 图片质量，仅jpeg时可用
-      // 截取指定位置和大小
+      quality: 0.8,
       left: 0,
       top: 0,
-      width: 320,
-      height: 320,
+      width: that.cWidth,
+      height: that.cHeight,
     });
-    console.log('down', result)
-    this.Arrays.resultLabelImage = result;
-  }
-
-  moveDragByKeyboard = (type, value) => {
-    const activeObj = this.getObjects()[0];
-    const { left, top, width, height } = activeObj;
-    console.log(33, activeObj)
-    switch (type) {
-      case 'top':
-        activeObj.set('top', top - value)
-        break;
-      case 'right':
-        activeObj.set('left', left + value);
-        break;
-      case 'bottom':
-        activeObj.set('top', top + value);
-        break;
-      case 'left':
-        activeObj.set('left', left - value);
-        break;
-      default:
-        break;
-    }
-    // let target = transform.target,
-    //       newLeft = x - transform.offsetX,
-    //       newTop = y - transform.offsetY,
-    //       moveX = !target.get('lockMovementX') && target.left !== newLeft,
-    //       moveY = !target.get('lockMovementY') && target.top !== newTop;
-    //   moveX && target.set('left', newLeft);
-    //   moveY && target.set('top', newTop);
-    //   if (moveX || moveY) {
-    //     fireEvent('moving', commonEventInfo(eventData, transform, x, y));
-    //   }
-    //   return moveX || moveY;
-    this.canvas.renderAll();
+    console.log("down", result);
+    that.Arrays.resultLabelImage = result;
   }
 
   toGroup() {
     const objs = this.getObjects();
-    const group = this.drawImage.generateGroup(objs);
-    group.toActiveSelection();
-    this.updatePolygon([group])
+
+    const group = this.drawImage.generateGroup(objs, {
+      id: "group",
+    });
+
+    this.updatePolygon([group]);
+
+    this.canvas.setActiveObject(group);
   }
 
+  splitGroup() {
+    const that = this;
+    const objs = that.getObjects("group");
 
-  // 边界检测
+    if (objs && objs.length) {
+      const arr = [];
+      objs.forEach((item) => {
+        const subObjects = item.getObjects();
+        item.destroy();
+        that.canvas.remove(item);
+        arr.push(...subObjects);
+      });
+      console.log('组', arr)
+      that.updatePolygon(arr);
+    }
+  }
+
+  moveDragByKeyboard = (type, value) => {
+    const { canvas, cHeight, cWidth } = this;
+    const activeObj = canvas.getObjects()[0];
+    if (!activeObj) {
+      return;
+    }
+    // activeObj.setCoords()
+    const { left, top, width, height } = activeObj.getBoundingRect();
+
+    const space = parseInt(value) || 0;
+
+    switch (type) {
+      case "top":
+        console.log("top", top <= 0 ? height / 2 : activeObj.top - space);
+        activeObj.top = top <= 0 ? height / 2 : activeObj.top - space;
+        activeObj.setCoords();
+        break;
+      case "right":
+        activeObj.set(
+          "left",
+          left >= cWidth - width ? cWidth - width / 2 : activeObj.left + space
+        );
+        activeObj.setCoords();
+        break;
+      case "bottom":
+        activeObj.top =
+          top >= cHeight - height
+            ? cHeight - height / 2
+            : activeObj.top + space;
+        activeObj.setCoords();
+        break;
+      case "left":
+        activeObj.set("left", left <= 0 ? width / 2 : activeObj.left - space);
+        activeObj.setCoords();
+
+        break;
+      default:
+        break;
+    }
+    this.canvas.renderAll();
+  };
+
   checkBoudningBox(e) {
     const obj = e.target;
     if (!obj) {
       return;
     }
+    console.log(obj);
     obj.setCoords();
 
     const objBoundingBox = obj.getBoundingRect();
-
-    console.log("边界", objBoundingBox);
 
     if (objBoundingBox.top < 0) {
       obj.set("top", objBoundingBox.height / 2);

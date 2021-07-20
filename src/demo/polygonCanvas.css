@@ -18,16 +18,17 @@
 }
 
 
-.lower-canvas {
+/* .lower-canvas {
   background: url(https://i.ibb.co/cXKy30V/Rectangle-139.png) no-repeat;
   background-size: contain;
-}
+} */
 
 .drag-action span {
   display: inline-block;
   background-color: #000;
   color: #fff;
-  padding: 10px;
-  margin: 10px;
+  padding: 5px;
+  margin: 5px;
   cursor: pointer;
+  user-select: none;
 }

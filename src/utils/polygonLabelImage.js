@@ -76,6 +76,8 @@ class PolygonLabelImage extends LabelImage {
     this.createResultImage();
   };
 
+  
+
 
 }
 

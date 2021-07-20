@@ -3,14 +3,14 @@ import React, { useMemo, useEffect, useRef, useState } from "react";
 import "./polygonCanvas.css";
 
 import PolygonLabelImage from "../utils/polygonLabelImage";
-import PresetAreaAction from '../component/presetArea';
+import PresetAreaAction from "../component/presetArea";
 
 const FabricPolygonComponent = () => {
   const canvasRef = useRef(null);
 
   const [canvas, setcanvas] = useState(null);
-  const [type, settype] = useState('polygonOn')
-  const [value, setvalue] = useState(2)
+  const [type, settype] = useState("polygonOn");
+  const [value, setvalue] = useState(2);
 
   useEffect(() => {
     const canvasContent = canvasRef.current;
@@ -38,43 +38,47 @@ const FabricPolygonComponent = () => {
     initCanvas.setImage("https://i.ibb.co/cXKy30V/Rectangle-139.png");
   }, []);
 
-
   const handlePolygon = () => {
-    settype("polygonOn")
+    settype("polygonOn");
+    canvas.clearNoPolygon();
+    canvas.splitGroup();
     canvas.resetFeaturesAttr("polygonOn", true);
   };
   const handleErase = () => {
-    settype("eraseOn")
+    settype("eraseOn");
+    canvas.clearNoPolygon();
+    canvas.splitGroup();
     canvas.resetFeaturesAttr("eraseOn", true);
   };
   const handleDownload = () => {
-    settype("downOn")
+    settype("downOn");
+    canvas.clearNoPolygon();
+    canvas.splitGroup();
     canvas.resetFeaturesAttr("downOn", true);
     canvas.handleToDataURL();
   };
 
   const handleDrag = () => {
-    settype("dragOn")
+    settype("dragOn");
+    canvas.clearNoPolygon();
     canvas.resetFeaturesAttr("dragOn", true);
 
-    canvas.toGroup()
+    canvas.toGroup();
   };
 
   const handleDragAction = (type) => {
     canvas.moveDragByKeyboard(type, value);
-  }
+  };
 
   return (
     <div className="container">
       <div>
         <div className="polygonCanvasView">
-
           <canvas ref={canvasRef} width="320" height="320" className="canvas">
             您的浏览器不支持canvas，请更换浏览器.
           </canvas>
         </div>
         <div>
-
           <button
             className={type === "polygonOn" ? "active" : ""}
             onClick={handlePolygon}
@@ -95,28 +99,32 @@ const FabricPolygonComponent = () => {
             drag
           </button>
 
-
-
           <button
             className={type === "downOn" ? "active" : ""}
             onClick={handleDownload}
           >
             result
           </button>
-
-          <div className="drag-action">
-            <div>
-              <span onClick={() => handleDragAction('top')}>上</span>
-              <span onClick={() => handleDragAction('bottom')}>下</span>
+          {type === "dragOn" && (
+            <div className="drag-action">
+              <div>
+                <span onClick={() => handleDragAction("top")}>上</span>
+                <span onClick={() => handleDragAction("bottom")}>下</span>
+              </div>
+              <input
+                type="number"
+                onChange={(e) => setvalue(e.target.value)}
+                value={value}
+                min={1}
+                max={100}
+              />
+              <div>
+                <span onClick={() => handleDragAction("left")}>左</span>
+                <span onClick={() => handleDragAction("right")}>右</span>
+              </div>
             </div>
-            <input type="number" onChange={(e) => setvalue(e.target.value)} value={value}/>
-            <div>
-              <span onClick={() => handleDragAction('left')}>左</span>
-              <span onClick={() => handleDragAction('right')}>右</span>
-            </div>
-          </div>
+          )}
         </div>
-
       </div>
       {/* <div>
         <PresetAreaAction/>

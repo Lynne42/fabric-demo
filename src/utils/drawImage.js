@@ -6,7 +6,6 @@ const polygonConfig = {
   cornerColor: "yellow",
   selectable: false,
   hasBorders: false,
-  // hasControls: false,
   evented: false,
 };
 
@@ -50,13 +49,13 @@ const groupConfig = {
   padding: 0,
   rotatingPointOffset: 4,
   controlVisible: {
-    'tl': true, 
-    'tr': true, 
-    'br': true, 
-    'bl': true, 
-    'ml': true, 
-    'mt': true, 
-    'mr': true, 
+    'tl': true,
+    'tr': true,
+    'br': true,
+    'bl': true,
+    'ml': true,
+    'mt': true,
+    'mr': true,
     'mb': true,
     'mtr': false,
   },
