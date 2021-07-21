@@ -9,8 +9,8 @@ const FabricImageComponent = () => {
     const canvasContent = canvasRef.current;
     const canvas = new fabric.Canvas(canvasContent, {
       selection: false,
-      height: 320,
-      width: 320,
+      height: 600,
+      width: 600,
     });
     setCTX(canvas);
     fabric.Image.fromURL(
@@ -24,8 +24,8 @@ const FabricImageComponent = () => {
   return (
     <canvas
       ref={canvasRef}
-      width="320"
-      height="320"
+      width="600"
+      height="600"
       className="canvas1"
     >
       您的浏览器不支持canvas，请更换浏览器.

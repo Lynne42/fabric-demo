@@ -61,6 +61,14 @@ const groupConfig = {
   },
 }
 
+const rectConfig = {
+  fill: "rgba(255, 255, 255, 0.4)",
+  stroke: "rgba(255, 255, 255, 0.4)",
+  selectable: false,
+  hasBorders: false,
+  evented: false,
+}
+
 export class PolygonHole extends window.fabric.Polygon {
   constructor(paths, options = {}) {
     const [outer, ...holes] = paths;
@@ -100,7 +108,14 @@ class DrawImage {
     this.canvas = canvas;
     return canvas;
   }
+  createStaticCanvas(canvasDom, config = {}) {
+    return new window.fabric.StaticCanvas(canvasDom, config);
+  }
 
+  // draw poing
+  generatePoint(x, y) {
+    return new window.fabric.Point(x, y);
+  }
   // draw line
   generateLine(points, config = {}) {
     const line = new window.fabric.Line(points, {
@@ -133,8 +148,9 @@ class DrawImage {
   }
 
   generateRect(points, config = {}) {
-    const rect = new window.fabric.Group(points, {
-      name: "rect",
+    const rect = new window.fabric.Rect({
+      ...rectConfig,
+      ...points,
       ...config,
     });
     return rect;
@@ -204,8 +220,8 @@ class DrawImage {
   // }
   isContainedWithinObject(poly1, poly2) {
     const that = this;
-    const a = poly1.get('points');
-    const b = poly2.get('points');
+    const a = poly1.points;
+    const b = poly2.points;
     let count = 0;
     // 判断两个多边形的包含关系
     for (let i = 0, l = b.length; i < l; ++i) {

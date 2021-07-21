@@ -76,9 +76,50 @@ class PolygonLabelImage extends LabelImage {
     this.createResultImage();
   };
 
-  
+  // 按比例预设区域
+  presetAreaRect = (ratio) => {
+    const { cHeight, cWidth, scale, canvas } = this;
+    const w = cWidth * ratio;
+    const h = cHeight * ratio;
+    const x = cWidth / 2 - w / 2;
+    const y = cHeight / 2 - h / 2;
 
+    const points = [{
+      x: x, y: y,
+    }, {
+      x: x + w, y: y,
+    }, {
+      x: x + w, y: y + h,
+    }, {
+      x: x, y: y + h,
+    }, {
+      x: x, y: y,
+    }];
 
+    // 矩形 用 多边形来画， 简化之后的图形与图形的相交判断
+    const rect = this.drawImage.generatePolygon(points, {
+      id: 'preset-rect'
+    })
+    console.log(34333, rect)
+    canvas.add(rect)
+    canvas.renderAll()
+  }
+
+  clearAll = () => {
+    this.clearObject();
+  }
+
+  getSavePresetObject = () => {
+    return this.getPolygonAndHolePopygon();
+  }
+
+  // 预设 objects
+  setPreset(objs) {
+    const that = this;
+    that.clearObject();
+    console.log(2, objs)
+    this.drawHoleToPolygon(objs.pythons, objs.pythonsHole)
+  }
 }
 
 export default PolygonLabelImage;

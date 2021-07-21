@@ -51,6 +51,10 @@ class LabelImage {
     this.offsetOriginX = 0;
     this.offsetOriginY = 0;
 
+    // drag 累计 偏移差
+    this.relativeMouseX = 0;
+    this.relativeMouseY = 0;
+
     // 拖动过程中，鼠标前一次移动的横坐标
     this.prevX = 0;
     // 拖动过程中，鼠标前一次移动的纵坐标
@@ -77,6 +81,9 @@ class LabelImage {
       // 拖动开关
       dragOn: false,
 
+      //
+      moveOn: false,
+
       gridOn: false,
 
       // 多边形标注开关
@@ -101,40 +108,57 @@ class LabelImage {
     const that = this;
     const canvas = this.canvas;
     canvas.on("mouse:wheel", that.handleZoom.bind(that));
-    // canvas.on("mouse:move", this.handleDrag);
+    canvas.on("mouse:down", (e) => {
 
-    canvas.on("mouse:down", (options) => {
-      that.handleMouseDown(options);
+      if (e.e.altKey) {
+        that.Features.moveOn = true;
+      } else {
+        that.handleMouseDown(e);
+      }
+    });
+    canvas.on("mouse:up", function (e) {
+      that.Features.moveOn = false;
+    });
+    canvas.on("mouse:move", (e) => {
+      that.handleDrag(e);
     });
 
     canvas.on("object:moving", this.checkBoudningBox.bind(that));
   }
 
-  // 缩放
+  // canvas 缩放
   handleZoom(opt) {
     const delta = opt.e.deltaY;
-    let zoom = (delta > 0 ? -this.zoomSpace : this.zoomSpace) + this.canvas.getZoom();
+    let zoom =
+      (delta > 0 ? -this.zoomSpace : this.zoomSpace) + this.canvas.getZoom();
     zoom = Math.max(this.minScale, zoom);
     zoom = Math.min(this.maxScale, zoom);
 
-    console.log(11, zoom, opt.e.offsetX, opt.e.offsetY)
-    
     this.canvas.zoomToPoint({ x: opt.e.offsetX, y: opt.e.offsetY }, zoom);
     this.scale = zoom;
+
+    // if(zoom <= 1) {
+    //   this.canvas.setViewportTransform([1, 0, 0, 1, 0, 0]);
+    // }
+    // console.log('zoom', zoom)
     opt.e.preventDefault();
     opt.e.stopPropagation();
     this.canvas.renderAll();
   }
 
-  // 拖拽
+  // canvas 拖拽
   handleDrag(e) {
-    // 拖拽
-    if (this.Features.dragOn && e && e.e) {
-      const { movementX, movementY } = e.e;
+    const that = this;
+    if (that.Features.moveOn && e && e.e) {
 
-      const delta = new window.fabric.Point(movementX, movementY);
+      let delta = that.drawImage.generatePoint(e.e.movementX, e.e.movementY);
+      that.canvas.relativePan(delta);
 
-      this.canvas.relativePan(delta);
+      that.relativeMouseX += e.e.movementX;
+      that.relativeMouseY += e.e.movementY;
+
+      console.log(111, that.relativeMouseX, that.relativeMouseY)
+
     }
   }
 
@@ -389,30 +413,6 @@ class LabelImage {
     }
   }
 
-  // handle polygon and polygon hole
-  getEraseResultPolygon(polygons, polygonsHole, config) {
-    const { isContainedWithinObject, isIntersectsWithObject } = this.drawImage;
-    let arr = [];
-
-    for (let i = 0, len = polygons.length; i < len; i++) {
-      for (let j = 0, len1 = polygonsHole.length; j < len1; j++) {
-        if (isContainedWithinObject(polygons[i], polygonsHole[j])) {
-          arr.push(polygons[i]);
-          arr.push(polygonsHole[j]);
-          continue;
-        } else if (isIntersectsWithObject(polygons[i], polygonsHole[j])) {
-          const resultPoints = this.combineImage.difference(
-            polygons[i],
-            polygonsHole[j]
-          );
-          arr.push(this.drawImage.generatePolygon(resultPoints, config));
-        } else {
-          arr.push(polygons[i]);
-        }
-      }
-    }
-    return arr;
-  }
 
   // 获取 polygon and hole
   getPolygonAndHolePopygon() {
@@ -438,15 +438,16 @@ class LabelImage {
 
   // 生成 polygon abd hole
   drawHoleToPolygon(polygons, holes) {
-    console.log("drawHoleToPolygon", polygons, holes);
+    console.log(444, polygons, holes)
     const resultPoint = [];
     for (let i = 0, len = polygons.length; i < len; i++) {
       resultPoint[i] = [];
-      resultPoint[i].push(polygons[i].get("points"));
+      console.log(1, polygons[i].points)
+      resultPoint[i].push(polygons[i].points);
 
       for (let j = 0, len2 = holes.length; j < len2; j++) {
         if (this.drawImage.isContainedWithinObject(polygons[i], holes[j])) {
-          resultPoint[i].push(holes[j].get("points"));
+          resultPoint[i].push(holes[j].points);
         }
       }
     }
@@ -613,12 +614,12 @@ class LabelImage {
   createResultImage() {
     const that = this;
     const dom = document.createElement("canvas");
-    const nowCanvas = new window.fabric.StaticCanvas(dom, {
+    const nowCanvas = that.drawImage.createStaticCanvas(dom, {
       width: that.cWidth,
       height: that.cHeight,
       backgroundColor: "#fff",
-    });
-    
+    })
+
     const objects = that.canvas.getObjects();
     objects.forEach((nowItem) => {
       nowItem.fill = "block";
@@ -632,13 +633,13 @@ class LabelImage {
       width: that.cWidth,
       height: that.cHeight,
     });
-    console.log("down", result);
     that.Arrays.resultLabelImage = result;
 
     nowCanvas.clear();
     objects.forEach((nowItem) => {
       nowItem.fill = polygonConfig.fill;
     });
+    console.log(result)
   }
 
   // 合并组
@@ -662,7 +663,6 @@ class LabelImage {
     const objs = that.getObjects("group");
 
     if (objs && objs.length) {
-
       // 始终合成一个组， 所以不用循环
       const group = objs[0];
 
@@ -676,30 +676,38 @@ class LabelImage {
       console.log("组", subObjects);
       const resultPolygon = [];
       // 根据偏移量， 重写 polygon的 点
-      subObjects.forEach(object => {
+      subObjects.forEach((object) => {
+        const nowPoint = that.resetPoints(
+          object.get("points"),
+          that.offsetOriginX,
+          that.offsetOriginY
+        );
 
-        const nowPoint = that.resetPoints(object.get('points'), that.offsetOriginX, that.offsetOriginY)
-
-        if(object.holes && object.holes.length) {
-          const holePointArr = object.holes.map(
-            hole => that.resetPoints(hole, that.offsetOriginX, that.offsetOriginY)
-          )
-          const pro = new that.PolygonHole([nowPoint, ...holePointArr], polygonConfig);
+        if (object.holes && object.holes.length) {
+          const holePointArr = object.holes.map((hole) =>
+            that.resetPoints(hole, that.offsetOriginX, that.offsetOriginY)
+          );
+          const pro = new that.PolygonHole(
+            [nowPoint, ...holePointArr],
+            polygonConfig
+          );
           resultPolygon.push(pro);
         } else {
-          resultPolygon.push(that.drawImage.generatePolygon(nowPoint, polygonConfig));
+          resultPolygon.push(
+            that.drawImage.generatePolygon(nowPoint, polygonConfig)
+          );
         }
-      })
+      });
       that.updatePolygon(resultPolygon);
     }
   }
 
   resetPoints(pointsArr, x, y) {
-    const nowPoint = pointsArr.map(itemPoint => ({
+    const nowPoint = pointsArr.map((itemPoint) => ({
       x: itemPoint.x + x,
       y: itemPoint.y + y,
-    }))
-    return nowPoint
+    }));
+    return nowPoint;
   }
 
   // drag by btn
@@ -711,6 +719,8 @@ class LabelImage {
     }
     // activeObj.setCoords()
     const { left, top, width, height } = activeObj.getBoundingRect();
+
+    console.log('moveDragByKeyboard', left, top, width, height, canvas.getWidth())
 
     const space = parseInt(value) || 0;
 
@@ -772,6 +782,8 @@ class LabelImage {
       obj.setCoords();
     }
   }
+
+
 }
 
 export default LabelImage;

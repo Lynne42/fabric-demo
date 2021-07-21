@@ -13,16 +13,16 @@ export const areaImage: areaImageType[] = [
     name: 'None',
     ratio: 0,
   }, {
-    name: 'Center (70%)',
+    name: 'Center(70%)',
     ratio: 0.7,
   }, {
-    name: 'Center (50%)',
+    name: 'Center(50%)',
     ratio: 0.5,
   }, {
-    name: 'Center (30%)',
+    name: 'Center(30%)',
     ratio: 0.3,
   }, {
-    name: 'Center (10%)',
+    name: 'Center(10%)',
     ratio: 0.1,
   }
 ]

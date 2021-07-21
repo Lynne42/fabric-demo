@@ -1,5 +1,8 @@
 import React, { useMemo, useEffect, useRef, useState } from "react";
 // import { fabric } from "fabric";
+
+import { areaWearables, areaFeatures } from '../constant/config';
+
 import "./polygonCanvas.css";
 
 import PolygonLabelImage from "../utils/polygonLabelImage";
@@ -11,6 +14,8 @@ const FabricPolygonComponent = () => {
   const [canvas, setcanvas] = useState(null);
   const [type, settype] = useState("polygonOn");
   const [value, setvalue] = useState(2);
+  const [preType, setpreType] = useState('');
+  const [selectValue, setselectValue] = useState('Glasses')
 
   useEffect(() => {
     const canvasContent = canvasRef.current;
@@ -18,16 +23,16 @@ const FabricPolygonComponent = () => {
     const initCanvas = new PolygonLabelImage({
       canvas: canvasContent,
       canvasConfig: {
-        height: 320,
-        width: 320,
-        // selection: false,
+        height: 600,
+        width: 600,
+        selection: false,
         // centeredScaling: false,
         // selectable: false,
         // hasControls: false,
         // hasBorders: false,
         // objectCaching: true,
-        lockMovementX: true,
-        lockMovementY: true,
+        // lockMovementX: true,
+        // lockMovementY: true,
         // preserveObjectStacking: true,
       },
     });
@@ -70,11 +75,41 @@ const FabricPolygonComponent = () => {
     canvas.moveDragByKeyboard(type, value);
   };
 
+  const handlePreAction = (type, radio) => {
+    setpreType(type)
+    if(typeof radio === 'number') {
+      console.log('image', radio)
+      if(radio) {
+        // 按比例预设区域
+        canvas.presetAreaRect(radio);
+      } else {
+        canvas.clearAll()
+      }
+    } else {
+      const preResult = localStorage.getItem(type);
+      if(preResult) {
+        canvas.setPreset(JSON.parse(preResult))
+      } else {
+        alert('请先预设选区');
+      }
+    }
+  }
+
+  const handleSave = () => {
+    const objs = canvas.getSavePresetObject();
+    console.log(1, objs)
+    if(objs) {
+      localStorage.setItem(selectValue, JSON.stringify(objs));
+
+    } else {
+      alert('请先绘制预设选区')
+    }
+  }
   return (
     <div className="container">
       <div>
         <div className="polygonCanvasView">
-          <canvas ref={canvasRef} width="320" height="320" className="canvas">
+          <canvas ref={canvasRef} width="600" height="600" className="canvas">
             您的浏览器不支持canvas，请更换浏览器.
           </canvas>
         </div>
@@ -126,9 +161,20 @@ const FabricPolygonComponent = () => {
           )}
         </div>
       </div>
-      {/* <div>
-        <PresetAreaAction/>
-      </div> */}
+      <div>
+        <PresetAreaAction onClick={handlePreAction} type={preType}/>
+        <div>
+          <h2>保存预设区域</h2>
+          <select className="select-view" value={selectValue} onChange={(e) => setselectValue(e.target.value)}>
+            {
+              [...areaWearables, ...areaFeatures].map(item => (
+                <option key={item} value={item}>{item}</option>
+              ))
+            }
+          </select>
+          <button className="button" onClick={handleSave}>保存预设区域</button>
+        </div>
+      </div>
     </div>
   );
 };

@@ -10,8 +10,8 @@ const FabricRectComponent = () => {
     const canvasContent = canvasRef.current;
     const canvas = new fabric.Canvas(canvasContent, {
       selection: false,
-      height: 320,
-      width: 320,
+      height: 600,
+      width: 600,
     });
     setCTX(canvas);
     const rect = new fabric.Rect({
@@ -44,8 +44,8 @@ const FabricRectComponent = () => {
 
         <canvas
           ref={canvasRef}
-          width="320"
-          height="320"
+          width="600"
+          height="600"
           className="canvas"
           id="my-canvas"
         >

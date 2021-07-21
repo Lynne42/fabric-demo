@@ -63,8 +63,8 @@ const FabricComponent = () => {
     const canvasContent = canvasRef.current;
     const canvas = new fabric.Canvas(canvasContent, {
       selection: false,
-      height: 320,
-      width: 320,
+      height: 600,
+      width: 600,
     });
     fabric.Image.fromURL(
       "https://i.ibb.co/cXKy30V/Rectangle-139.png",
@@ -97,8 +97,8 @@ const FabricComponent = () => {
         {/* <FabricImageComponent /> */}
         <canvas
           ref={canvasRef}
-          width="320"
-          height="320"
+          width="600"
+          height="600"
           className="canvas"
           id="my-canvas"
         >
@@ -115,8 +115,8 @@ const FabricComponent = () => {
         />
         <canvas
           ref={canvasRef}
-          width="320"
-          height="320"
+          width="600"
+          height="600"
           className="canvas"
         >
           您的浏览器不支持canvas，请更换浏览器.

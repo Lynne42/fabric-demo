@@ -37,8 +37,8 @@ const FabricDragComponent = () => {
     const canvasContent = canvasRef.current;
     const ctx = new window.fabric.Canvas(canvasContent, {
       selection: false,
-      height: 320,
-      width: 320,
+      height: 600,
+      width: 600,
     });
     ctx.setOverlayColor("rgba(0,0,0,0)", undefined, { erasable: false });
 
@@ -94,8 +94,8 @@ const FabricDragComponent = () => {
       <div className={styles.canvasView}>
         <canvas
           ref={canvasRef}
-          width="320"
-          height="320"
+          width="600"
+          height="600"
           className="canvas"
           id="my-canvas"
         >

@@ -15,8 +15,8 @@ const FabricGridComponent = () => {
     const initCanvas = new GridLabelImage({
       canvas: canvasContent,
       ctx: new window.fabric.Canvas(canvasContent, {
-        height: 320,
-        width: 320,
+        height: 600,
+        width: 600,
         selection: false,
         centeredScaling: true,
       }),
@@ -50,8 +50,8 @@ const FabricGridComponent = () => {
       <div className={styles.canvasView}>
         <canvas
           ref={canvasRef}
-          width="320"
-          height="320"
+          width="600"
+          height="600"
           className="canvas"
           id="my-canvas"
         >
