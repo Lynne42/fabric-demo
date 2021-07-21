@@ -81,8 +81,8 @@ class LabelImage {
       // 拖动开关
       dragOn: false,
 
-      //
-      moveOn: false,
+      // 鼠标按下开关
+      mouseDownMoveOn: false,
 
       gridOn: false,
 
@@ -107,18 +107,33 @@ class LabelImage {
   handleEvent() {
     const that = this;
     const canvas = this.canvas;
+    const Features = this.Features;
+    let mouseDownTimer = null;
     canvas.on("mouse:wheel", that.handleZoom.bind(that));
     canvas.on("mouse:down", (e) => {
 
       if (e.e.altKey) {
-        that.Features.moveOn = true;
+        Features.mouseDownMoveOn = true;
+      } else {
+        
+        mouseDownTimer = setTimeout(() => {
+          Features.mouseDownMoveOn = true;
+          
+        }, 200);
+      }
+      
+    });
+
+    canvas.on("mouse:up", function (e) {
+      clearTimeout(mouseDownTimer);
+      if(Features.mouseDownMoveOn) {
+        Features.mouseDownMoveOn = false; 
       } else {
         that.handleMouseDown(e);
       }
+      
     });
-    canvas.on("mouse:up", function (e) {
-      that.Features.moveOn = false;
-    });
+
     canvas.on("mouse:move", (e) => {
       that.handleDrag(e);
     });
@@ -133,8 +148,8 @@ class LabelImage {
       (delta > 0 ? -this.zoomSpace : this.zoomSpace) + this.canvas.getZoom();
     zoom = Math.max(this.minScale, zoom);
     zoom = Math.min(this.maxScale, zoom);
-
-    this.canvas.zoomToPoint({ x: opt.e.offsetX, y: opt.e.offsetY }, zoom);
+    console.log(444, opt)
+    this.canvas.zoomToPoint({ x: 300, y: 300 }, zoom);
     this.scale = zoom;
 
     // if(zoom <= 1) {
@@ -149,7 +164,7 @@ class LabelImage {
   // canvas 拖拽
   handleDrag(e) {
     const that = this;
-    if (that.Features.moveOn && e && e.e) {
+    if (that.Features.mouseDownMoveOn && e && e.e) {
 
       let delta = that.drawImage.generatePoint(e.e.movementX, e.e.movementY);
       that.canvas.relativePan(delta);
