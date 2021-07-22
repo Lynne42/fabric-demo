@@ -100,9 +100,16 @@ class PolygonLabelImage extends LabelImage {
     const rect = this.drawImage.generatePolygon(points, {
       id: 'preset-rect'
     })
-    console.log(34333, rect)
+    this.clearObject();
     canvas.add(rect)
     canvas.renderAll()
+  }
+
+  // 预设 objects
+  setPreset(objs) {
+    const that = this;
+    that.clearObject();
+    this.drawHoleToPolygon(objs.pythons, objs.pythonsHole)
   }
 
   clearAll = () => {
@@ -113,13 +120,7 @@ class PolygonLabelImage extends LabelImage {
     return this.getPolygonAndHolePopygon();
   }
 
-  // 预设 objects
-  setPreset(objs) {
-    const that = this;
-    that.clearObject();
-    console.log(2, objs)
-    this.drawHoleToPolygon(objs.pythons, objs.pythonsHole)
-  }
+  
 }
 
 export default PolygonLabelImage;

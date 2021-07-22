@@ -1,5 +1,4 @@
 import React, { useMemo, useEffect, useRef, useState } from "react";
-// import { fabric } from "fabric";
 
 import { areaWearables, areaFeatures } from '../constant/config';
 
@@ -78,7 +77,6 @@ const FabricPolygonComponent = () => {
   const handlePreAction = (type, radio) => {
     setpreType(type)
     if(typeof radio === 'number') {
-      console.log('image', radio)
       if(radio) {
         // 按比例预设区域
         canvas.presetAreaRect(radio);

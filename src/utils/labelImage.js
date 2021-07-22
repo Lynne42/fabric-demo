@@ -126,20 +126,15 @@ class LabelImage {
       if(Features.mouseDownMoveOn) {
         Features.mouseDownMoveOn = false;
         const { tl, tr, bl, br } = that.canvas.vptCoords;
-        const {isBorder, offsetX, offsetY } = that.isWhiteBorder(tl, br);
+        const {isBorder, isLT } = that.isWhiteBorder(tl, br);
         if(isBorder) {
-          console.log(444000)
-          // vptCoords
-          that.canvas.set('vptCoords', that.resetVptCoords(tl, tr, bl, br, offsetX, offsetY))
-          console.log('ip', offsetX, offsetY, that.canvas.viewportTransform)
-          //that.canvas.setCoords();
+          const translateX = isLT ? 0 : -this.cWidth*this.scale + this.cWidth;
+          this.canvas.setViewportTransform([this.scale, 0, 0, this.scale, translateX, translateX]);
           that.canvas.renderAll();
         }
-
       } else {
         that.handleMouseDown(e);
       }
-
     });
 
     canvas.on("mouse:move", (e) => {
@@ -147,6 +142,10 @@ class LabelImage {
     });
 
     canvas.on("object:moving", this.checkBoudningBox.bind(that));
+
+    canvas.on("mouse:over", () => {
+      console.log(9900)
+    })
   }
 
   // canvas 缩放
@@ -159,7 +158,7 @@ class LabelImage {
       (delta > 0 ? -this.zoomSpace : this.zoomSpace) + this.canvas.getZoom();
     zoom = Math.max(this.minScale, zoom);
     zoom = Math.min(this.maxScale, zoom);
-    console.log(1, this.canvas.getPointer(opt, true), this.canvas.getZoom(), this.canvas.getVpCenter(), this.canvas.vptCoords, this.canvas.padding)
+    // console.log(1, this.canvas.getPointer(opt, true), this.canvas.getZoom(), this.canvas.getVpCenter(), this.canvas.vptCoords, this.canvas.padding)
     this.canvas.zoomToPoint({ x: opt.e.offsetX, y: opt.e.offsetY }, zoom);
     this.scale = zoom;
 
@@ -175,14 +174,14 @@ class LabelImage {
   handleDrag(e) {
     const that = this;
     if (that.Features.mouseDownMoveOn && e && e.e) {
-      console.log('移动', this.canvas.getPointer(e, true), this.canvas.getZoom(), this.canvas.getVpCenter(), this.canvas.vptCoords, this.canvas.padding)
+      //console.log('移动', this.canvas.getPointer(e, true), this.canvas.getZoom(), this.canvas.getVpCenter(), this.canvas.vptCoords, this.canvas.padding)
       let delta = that.drawImage.generatePoint(e.e.movementX, e.e.movementY);
       that.canvas.relativePan(delta);
 
       that.relativeMouseX += e.e.movementX / that.scale;
       that.relativeMouseY += e.e.movementY / that.scale;
 
-      console.log('移动累计', that.relativeMouseX, that.relativeMouseY)
+      //console.log('移动累计', that.canvas.viewportTransform)
 
     }
   }
@@ -190,29 +189,22 @@ class LabelImage {
   // 判断是否出现白边
   isWhiteBorder(tl, br) {
     let isBool = false;
-    let offsetX = 0;
-    let offsetY = 0;
-    if(tl.x < 0  || tl.y < 0 || br.x > this.cWidth  || br.y > this.cHeight) {
+    let isLT = false;
+
+    if(tl.x < 0  || tl.y < 0) {
       isBool = true;
+      isLT = true;
+    } else if(br.x > this.cWidth  || br.y > this.cHeight) {
+      isBool = true;
+      isLT = false;
     } else {
       isBool = false;
     }
-    if(tl.x < 0) {
-      offsetX = tl.x;
-    } else if(br.x > this.cWidth) {
-      offsetX = br.x - this.cWidth;
-    }
-
-    if(tl.y < 0) {
-      offsetY = tl.y;
-    } else if(br.y > this.cHeight) {
-      offsetY = br.y - this.cHeight;
-    }
+    
 
     return {
       isBorder: isBool,
-      offsetX,
-      offsetY,
+      isLT,
     }
   }
 

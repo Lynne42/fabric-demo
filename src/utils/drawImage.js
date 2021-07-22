@@ -1,7 +1,7 @@
 export const polygonConfig = {
   class: "polygon",
-  fill: "rgba(255, 255, 255, 0.4)",
-  stroke: "rgba(255, 255, 255, 0.4)",
+  fill: "rgba(255, 255, 255, 0.6)",
+  stroke: "rgba(255, 255, 255, 0.2)",
   cornerStyle: "circle",
   cornerColor: "yellow",
   selectable: false,

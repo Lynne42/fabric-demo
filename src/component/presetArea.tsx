@@ -12,17 +12,9 @@ const PresetAreaAction: React.FunctionComponent<props> = ({
   type,
   onClick,
 }) => {
-  const isNone = type === "None";
-
-  console.log(111, type)
 
   const handleClick = (name: string, radio?: number) => {
-    if(!type || (name === 'None') || (type && type === 'None')) {
-      onClick(name, radio);
-      return
-    } else if (name === type) {
-      return;
-    }
+    onClick(name, radio);
   };
 
   return (
@@ -33,8 +25,7 @@ const PresetAreaAction: React.FunctionComponent<props> = ({
           <li
             key={item.name}
             onClick={() => handleClick(item.name, item.ratio)}
-            className={`group-item ${!isNone && type && type !== item.name && item.name !== 'None'  ? 'group-item-disabled' : ''  }`}
-          >
+            className='group-item'>
             {item.name}
           </li>
         ))}
@@ -45,7 +36,7 @@ const PresetAreaAction: React.FunctionComponent<props> = ({
           <li
             key={item}
             onClick={() => handleClick(item)}
-            className={`group-item ${!isNone && type && type !== item ? 'group-item-disabled' : ''}`}
+            className='group-item'
           >
             {item}
           </li>
@@ -57,8 +48,8 @@ const PresetAreaAction: React.FunctionComponent<props> = ({
           <li
             key={item}
             onClick={() => handleClick(item)}
-            className={`group-item ${!isNone && type && type !== item ? 'group-item-disabled' : ''}`}
-          >
+            className='group-item'
+            >
             {item}
           </li>
         ))}
