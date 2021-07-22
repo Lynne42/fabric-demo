@@ -105,33 +105,41 @@ class LabelImage {
 
   // 事件绑定
   handleEvent() {
+
     const that = this;
     const canvas = this.canvas;
     const Features = this.Features;
     let mouseDownTimer = null;
     canvas.on("mouse:wheel", that.handleZoom.bind(that));
     canvas.on("mouse:down", (e) => {
-
       if (e.e.altKey) {
         Features.mouseDownMoveOn = true;
       } else {
-        
         mouseDownTimer = setTimeout(() => {
           Features.mouseDownMoveOn = true;
-          
         }, 200);
       }
-      
     });
 
-    canvas.on("mouse:up", function (e) {
+    canvas.on("mouse:up", (e) => {
       clearTimeout(mouseDownTimer);
       if(Features.mouseDownMoveOn) {
-        Features.mouseDownMoveOn = false; 
+        Features.mouseDownMoveOn = false;
+        const { tl, tr, bl, br } = that.canvas.vptCoords;
+        const {isBorder, offsetX, offsetY } = that.isWhiteBorder(tl, br);
+        if(isBorder) {
+          console.log(444000)
+          // vptCoords
+          that.canvas.set('vptCoords', that.resetVptCoords(tl, tr, bl, br, offsetX, offsetY))
+          console.log('ip', offsetX, offsetY, that.canvas.viewportTransform)
+          //that.canvas.setCoords();
+          that.canvas.renderAll();
+        }
+
       } else {
         that.handleMouseDown(e);
       }
-      
+
     });
 
     canvas.on("mouse:move", (e) => {
@@ -143,21 +151,23 @@ class LabelImage {
 
   // canvas 缩放
   handleZoom(opt) {
+    opt.e.preventDefault();
+    opt.e.stopPropagation();
+
     const delta = opt.e.deltaY;
     let zoom =
       (delta > 0 ? -this.zoomSpace : this.zoomSpace) + this.canvas.getZoom();
     zoom = Math.max(this.minScale, zoom);
     zoom = Math.min(this.maxScale, zoom);
-    console.log(444, opt)
-    this.canvas.zoomToPoint({ x: 300, y: 300 }, zoom);
+    console.log(1, this.canvas.getPointer(opt, true), this.canvas.getZoom(), this.canvas.getVpCenter(), this.canvas.vptCoords, this.canvas.padding)
+    this.canvas.zoomToPoint({ x: opt.e.offsetX, y: opt.e.offsetY }, zoom);
     this.scale = zoom;
 
     // if(zoom <= 1) {
     //   this.canvas.setViewportTransform([1, 0, 0, 1, 0, 0]);
     // }
     // console.log('zoom', zoom)
-    opt.e.preventDefault();
-    opt.e.stopPropagation();
+
     this.canvas.renderAll();
   }
 
@@ -165,15 +175,61 @@ class LabelImage {
   handleDrag(e) {
     const that = this;
     if (that.Features.mouseDownMoveOn && e && e.e) {
-
+      console.log('移动', this.canvas.getPointer(e, true), this.canvas.getZoom(), this.canvas.getVpCenter(), this.canvas.vptCoords, this.canvas.padding)
       let delta = that.drawImage.generatePoint(e.e.movementX, e.e.movementY);
       that.canvas.relativePan(delta);
 
-      that.relativeMouseX += e.e.movementX;
-      that.relativeMouseY += e.e.movementY;
+      that.relativeMouseX += e.e.movementX / that.scale;
+      that.relativeMouseY += e.e.movementY / that.scale;
 
-      console.log(111, that.relativeMouseX, that.relativeMouseY)
+      console.log('移动累计', that.relativeMouseX, that.relativeMouseY)
 
+    }
+  }
+
+  // 判断是否出现白边
+  isWhiteBorder(tl, br) {
+    let isBool = false;
+    let offsetX = 0;
+    let offsetY = 0;
+    if(tl.x < 0  || tl.y < 0 || br.x > this.cWidth  || br.y > this.cHeight) {
+      isBool = true;
+    } else {
+      isBool = false;
+    }
+    if(tl.x < 0) {
+      offsetX = tl.x;
+    } else if(br.x > this.cWidth) {
+      offsetX = br.x - this.cWidth;
+    }
+
+    if(tl.y < 0) {
+      offsetY = tl.y;
+    } else if(br.y > this.cHeight) {
+      offsetY = br.y - this.cHeight;
+    }
+
+    return {
+      isBorder: isBool,
+      offsetX,
+      offsetY,
+    }
+  }
+
+  resetVptCoordsPoint(obj, offsetX, offsetY) {
+    return {
+      x: obj.x - offsetX,
+      y: obj.y - offsetY,
+    }
+  }
+
+  // reset vptCoords
+  resetVptCoords(tl, tr, bl, br, offsetX, offsetY) {
+    return {
+      tl: this.resetVptCoordsPoint(tl, offsetX, offsetY),
+      tr: this.resetVptCoordsPoint(tr, offsetX, offsetY),
+      bl: this.resetVptCoordsPoint(bl, offsetX, offsetY),
+      br: this.resetVptCoordsPoint(br, offsetX, offsetY),
     }
   }
 
@@ -453,7 +509,6 @@ class LabelImage {
 
   // 生成 polygon abd hole
   drawHoleToPolygon(polygons, holes) {
-    console.log(444, polygons, holes)
     const resultPoint = [];
     for (let i = 0, len = polygons.length; i < len; i++) {
       resultPoint[i] = [];
