@@ -1,4 +1,6 @@
 import LabelImage from "./labelImage";
+import { circlePointConfig } from './cnavasConfig';
+
 
 class PolygonLabelImage extends LabelImage {
   constructor(options) {
@@ -37,6 +39,8 @@ class PolygonLabelImage extends LabelImage {
     if ((options.target && options.target.id === polygonPointArray[0]?.id) || isPolygonStartPointBool) {
       this.generatePolygon({
         type: "polygon",
+        fill: 'rgba(255, 255, 255, 0.4)',
+        stroke: 'none',
       });
     } else {
       this.addPolygonPoint({
@@ -65,8 +69,8 @@ class PolygonLabelImage extends LabelImage {
         options,
         type: "polygon-erase",
         configCircle: {
-          fill: "rgba(255, 86, 86, 0.3)",
-          firstFill: "rgba(255, 86, 218, 0.5)",
+          fill: circlePointConfig.fillErase,
+          firstFill: circlePointConfig.firstFillErase,
         },
       });
     }
@@ -120,7 +124,7 @@ class PolygonLabelImage extends LabelImage {
     return this.getPolygonAndHolePopygon();
   }
 
-  
+
 }
 
 export default PolygonLabelImage;

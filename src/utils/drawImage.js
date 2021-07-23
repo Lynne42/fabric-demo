@@ -1,73 +1,4 @@
-export const polygonConfig = {
-  class: "polygon",
-  fill: "rgba(255, 255, 255, 0.6)",
-  stroke: "rgba(255, 255, 255, 0.2)",
-  cornerStyle: "circle",
-  cornerColor: "yellow",
-  selectable: false,
-  hasBorders: false,
-  evented: false,
-};
-
-export const circlePointConfig = {
-  class: "circle",
-  radius: 3,
-  fill: "rgba(86, 151, 255, 0.5)",
-  firstFill: "rgba(86, 255, 164, 0.5)",
-  strokeWidth: 0.5,
-  selectable: false,
-  hasBorders: false,
-  hasControls: false,
-  originX: "center",
-  originY: "center",
-};
-
-export const lineConfig = {
-  class: "line",
-  strokeWidth: 1,
-  fill: "blue",
-  stroke: "blue",
-  originX: "center",
-  originY: "center",
-  selectable: false,
-  hasBorders: false,
-  hasControls: false,
-  evented: false,
-};
-
-const groupConfig = {
-  fill: "rgba(255, 255, 255, 0.4)",
-  stroke: "rgba(255, 255, 255, 0.4)",
-  hasControls: true,
-  selectable: true,
-  hasBorders: true,
-  evented: true,
-  lockRotation: true,
-  cornerColor: 'blue',
-  cornerStyle: 'circle',
-  cornerSize: 8,
-  padding: 0,
-  rotatingPointOffset: 4,
-  controlVisible: {
-    'tl': true,
-    'tr': true,
-    'br': true,
-    'bl': true,
-    'ml': true,
-    'mt': true,
-    'mr': true,
-    'mb': true,
-    'mtr': false,
-  },
-}
-
-const rectConfig = {
-  fill: "rgba(255, 255, 255, 0.4)",
-  stroke: "rgba(255, 255, 255, 0.4)",
-  selectable: false,
-  hasBorders: false,
-  evented: false,
-}
+import { polygonConfig, circlePointConfig, lineConfig, groupConfig, rectConfig } from './cnavasConfig';
 
 export class PolygonHole extends window.fabric.Polygon {
   constructor(paths, options = {}) {
@@ -166,8 +97,10 @@ class DrawImage {
     });
     const controlVisible = config.controlVisible || groupConfig.controlVisible;
 
-    Object.keys(controlVisible).forEach(item => group.setControlVisible(item, controlVisible[item]))
-    console.log(444, group)
+    Object.keys(controlVisible).forEach((item) =>
+      group.setControlVisible(item, controlVisible[item])
+    );
+    console.log(444, group);
     return group;
   }
 
@@ -209,7 +142,7 @@ class DrawImage {
 
   // Determine whether there is an intersection between two graphics
   isIntersectsWithObject(poly1, poly2) {
-    return this.polygonPolygon(poly1.get('points'), poly2.get('points'))
+    return this.polygonPolygon(poly1.get("points"), poly2.get("points"));
     // return poly1.intersectsWithObject(poly2);
   }
 
@@ -226,15 +159,15 @@ class DrawImage {
     // 判断两个多边形的包含关系
     for (let i = 0, l = b.length; i < l; ++i) {
       if (that.pointInPolygon(b[i], a)) {
-        count +=1;
+        count += 1;
       } else {
-        return false
+        return false;
       }
     }
-    if(count >= b.length) {
-      return true
+    if (count >= b.length) {
+      return true;
     }
-    return false
+    return false;
   }
 
   editPolygon(poly) {
@@ -322,7 +255,6 @@ class DrawImage {
       return actionPerformed;
     };
   }
-
 
   polygonPolygon(a, b) {
     const that = this;

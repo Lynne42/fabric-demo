@@ -1,8 +1,6 @@
-import DrawImage, {
-  PolygonHole,
-  polygonConfig,
-  circlePointConfig,
-} from "./drawImage";
+import DrawImage, { PolygonHole } from "./drawImage";
+
+import { polygonConfig, circlePointConfig } from './cnavasConfig';
 
 import CombineImage from "./combineImage";
 
@@ -81,6 +79,9 @@ class LabelImage {
       // 拖动开关
       dragOn: false,
 
+      // 鼠标滚动标记
+      mouseWheelOn: false,
+
       // 鼠标按下开关
       mouseDownMoveOn: false,
 
@@ -105,12 +106,24 @@ class LabelImage {
 
   // 事件绑定
   handleEvent() {
-
     const that = this;
     const canvas = this.canvas;
     const Features = this.Features;
     let mouseDownTimer = null;
-    canvas.on("mouse:wheel", that.handleZoom.bind(that));
+    let mouseWheelTimer = null;
+
+    canvas.on("mouse:wheel", (e) => {
+      Features.mouseWheelOn = true;
+      if (Features.mouseWheelOn) {
+        that.handleZoom(e);
+      }
+      clearTimeout(mouseWheelTimer);
+      mouseWheelTimer = setTimeout(() => {
+        console.log("停止");
+        Features.mouseWheelOn = false;
+        this.clearWhiteBorder();
+      }, 66);
+    });
     canvas.on("mouse:down", (e) => {
       if (e.e.altKey) {
         Features.mouseDownMoveOn = true;
@@ -123,15 +136,9 @@ class LabelImage {
 
     canvas.on("mouse:up", (e) => {
       clearTimeout(mouseDownTimer);
-      if(Features.mouseDownMoveOn) {
+      if (Features.mouseDownMoveOn) {
         Features.mouseDownMoveOn = false;
-        const { tl, tr, bl, br } = that.canvas.vptCoords;
-        const {isBorder, isLT } = that.isWhiteBorder(tl, br);
-        if(isBorder) {
-          const translateX = isLT ? 0 : -this.cWidth*this.scale + this.cWidth;
-          this.canvas.setViewportTransform([this.scale, 0, 0, this.scale, translateX, translateX]);
-          that.canvas.renderAll();
-        }
+        this.clearWhiteBorder();
       } else {
         that.handleMouseDown(e);
       }
@@ -142,10 +149,6 @@ class LabelImage {
     });
 
     canvas.on("object:moving", this.checkBoudningBox.bind(that));
-
-    canvas.on("mouse:over", () => {
-      console.log(9900)
-    })
   }
 
   // canvas 缩放
@@ -158,15 +161,8 @@ class LabelImage {
       (delta > 0 ? -this.zoomSpace : this.zoomSpace) + this.canvas.getZoom();
     zoom = Math.max(this.minScale, zoom);
     zoom = Math.min(this.maxScale, zoom);
-    // console.log(1, this.canvas.getPointer(opt, true), this.canvas.getZoom(), this.canvas.getVpCenter(), this.canvas.vptCoords, this.canvas.padding)
     this.canvas.zoomToPoint({ x: opt.e.offsetX, y: opt.e.offsetY }, zoom);
     this.scale = zoom;
-
-    // if(zoom <= 1) {
-    //   this.canvas.setViewportTransform([1, 0, 0, 1, 0, 0]);
-    // }
-    // console.log('zoom', zoom)
-
     this.canvas.renderAll();
   }
 
@@ -174,55 +170,85 @@ class LabelImage {
   handleDrag(e) {
     const that = this;
     if (that.Features.mouseDownMoveOn && e && e.e) {
-      //console.log('移动', this.canvas.getPointer(e, true), this.canvas.getZoom(), this.canvas.getVpCenter(), this.canvas.vptCoords, this.canvas.padding)
       let delta = that.drawImage.generatePoint(e.e.movementX, e.e.movementY);
       that.canvas.relativePan(delta);
-
       that.relativeMouseX += e.e.movementX / that.scale;
       that.relativeMouseY += e.e.movementY / that.scale;
+    }
+  }
 
-      //console.log('移动累计', that.canvas.viewportTransform)
+  // 缩放和拖拽完成后处理白边
+  clearWhiteBorder() {
+    const { tl, tr, bl, br } = this.canvas.vptCoords;
+    const { isBorder, isLeft, isTop, isRight, isBottom } = this.isWhiteBorder(
+      tl,
+      br
+    );
+
+    if (isBorder) {
+      const transform = this.canvas.viewportTransform;
+      let translateX = 0; // isLT ? 0 : -this.cWidth * this.scale + this.cWidth;
+      let translateY = 0;
+
+
+      if (isLeft && isTop) {
+        translateX = 0;
+        translateY = 0;
+      } else if (isBottom && isRight) {
+        translateX = -this.cWidth * this.scale + this.cWidth;
+        translateY = -this.cHeight * this.scale + this.cHeight;
+
+      } else if (isLeft && isBottom) {
+        translateX = 0;
+        translateY = -this.cHeight * this.scale + this.cHeight;
+      } else if (isTop && isRight) {
+        translateX = -this.cWidth * this.scale + this.cWidth;
+        translateY = 0;
+      } else if (isTop) {
+        translateX = transform[4];
+        translateY = 0;
+
+      } else if (isLeft) {
+        translateX = 0;
+        translateY = transform[5];
+
+      } else if (isBottom) {
+        translateX = transform[4];
+        translateY = -this.cHeight * this.scale + this.cHeight;
+      } else if (isRight) {
+        translateX = -this.cWidth * this.scale + this.cWidth;;
+        translateY = transform[5];
+      }
+
+      this.canvas.setViewportTransform([
+        this.scale,
+        0,
+        0,
+        this.scale,
+        translateX,
+        translateX,
+      ]);
+      this.canvas.renderAll();
 
     }
   }
 
   // 判断是否出现白边
   isWhiteBorder(tl, br) {
-    let isBool = false;
-    let isLT = false;
+    let isLeft = tl.x < 0,
+      isTop = tl.y < 0,
+      isRight = br.x > this.cWidth,
+      isBottom = br.y > this.cHeight;
 
-    if(tl.x < 0  || tl.y < 0) {
-      isBool = true;
-      isLT = true;
-    } else if(br.x > this.cWidth  || br.y > this.cHeight) {
-      isBool = true;
-      isLT = false;
-    } else {
-      isBool = false;
-    }
-    
+    let isBorder = isLeft || isTop || isRight || isBottom;
 
     return {
-      isBorder: isBool,
-      isLT,
-    }
-  }
-
-  resetVptCoordsPoint(obj, offsetX, offsetY) {
-    return {
-      x: obj.x - offsetX,
-      y: obj.y - offsetY,
-    }
-  }
-
-  // reset vptCoords
-  resetVptCoords(tl, tr, bl, br, offsetX, offsetY) {
-    return {
-      tl: this.resetVptCoordsPoint(tl, offsetX, offsetY),
-      tr: this.resetVptCoordsPoint(tr, offsetX, offsetY),
-      bl: this.resetVptCoordsPoint(bl, offsetX, offsetY),
-      br: this.resetVptCoordsPoint(br, offsetX, offsetY),
-    }
+      isBorder,
+      isLeft,
+      isTop,
+      isRight,
+      isBottom,
+    };
   }
 
   // 设置 drag前 前 group rect 坐标
@@ -476,7 +502,6 @@ class LabelImage {
     }
   }
 
-
   // 获取 polygon and hole
   getPolygonAndHolePopygon() {
     const objs = this.getObjects();
@@ -504,7 +529,7 @@ class LabelImage {
     const resultPoint = [];
     for (let i = 0, len = polygons.length; i < len; i++) {
       resultPoint[i] = [];
-      console.log(1, polygons[i].points)
+      console.log(1, polygons[i].points);
       resultPoint[i].push(polygons[i].points);
 
       for (let j = 0, len2 = holes.length; j < len2; j++) {
@@ -517,11 +542,19 @@ class LabelImage {
     let canvasObject = [];
     resultPoint.forEach((item) => {
       if (item.length > 1) {
-        const pro = new this.PolygonHole(item, polygonConfig);
+        const pro = new this.PolygonHole(item, {
+          ...polygonConfig,
+          fill: polygonConfig.resultFill,
+          stroke: polygonConfig.resultStroke,
+        });
         canvasObject.push(pro);
       } else {
         canvasObject.push(
-          this.drawImage.generatePolygon(item[0], polygonConfig)
+          this.drawImage.generatePolygon(item[0], {
+            ...polygonConfig,
+            fill: polygonConfig.resultFill,
+            stroke: polygonConfig.resultStroke,
+          })
         );
       }
     });
@@ -538,9 +571,7 @@ class LabelImage {
         this.canvas.add(np);
       }
     });
-
     this.canvas.renderAll();
-    console.log("result", this.getObjects());
   }
 
   // 清除为合成的polygon
@@ -680,7 +711,7 @@ class LabelImage {
       width: that.cWidth,
       height: that.cHeight,
       backgroundColor: "#fff",
-    })
+    });
 
     const objects = that.canvas.getObjects();
     objects.forEach((nowItem) => {
@@ -689,7 +720,7 @@ class LabelImage {
     });
     const result = nowCanvas.toDataURL({
       format: "jpeg", // jpeg或png
-      quality: 0.8,
+      quality: 1,
       left: 0,
       top: 0,
       width: that.cWidth,
@@ -701,7 +732,7 @@ class LabelImage {
     objects.forEach((nowItem) => {
       nowItem.fill = polygonConfig.fill;
     });
-    console.log(result)
+    console.log(result);
   }
 
   // 合并组
@@ -782,7 +813,14 @@ class LabelImage {
     // activeObj.setCoords()
     const { left, top, width, height } = activeObj.getBoundingRect();
 
-    console.log('moveDragByKeyboard', left, top, width, height, canvas.getWidth())
+    console.log(
+      "moveDragByKeyboard",
+      left,
+      top,
+      width,
+      height,
+      canvas.getWidth()
+    );
 
     const space = parseInt(value) || 0;
 
@@ -844,8 +882,6 @@ class LabelImage {
       obj.setCoords();
     }
   }
-
-
 }
 
 export default LabelImage;
