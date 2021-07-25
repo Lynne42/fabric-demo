@@ -1,13 +1,15 @@
+// https://blog.csdn.net/weixin_45265581/article/details/106436683
 export const polygonConfig = {
   class: "polygon",
-  fill: "rgba(255, 255, 255, 0)",
-  stroke: "rgba(255, 255, 255, 0.4)",
+  fill: "rgba(255, 255, 255, 0.4)",
+  fillOpcity: "rgba(255, 255, 255, 0)",
   resultFill: "rgba(255, 255, 255, 0.4)",
-  resultStroke: "rgba(255, 255, 255, 0)",
+  strokeDashArray: [5,5,5,5],
   selectable: false,
   hasBorders: false,
   evented: false,
 };
+
 
 export const circlePointConfig = {
   class: "circle",
@@ -16,7 +18,7 @@ export const circlePointConfig = {
   firstFill: "rgba(86, 255, 164, 0.8)",
   fillErase: "rgba(255, 86, 86, 0.8)",
   firstFillErase: "rgba(255, 86, 218, 0.8)",
-  strokeWidth: 0.5,
+
   selectable: false,
   hasBorders: false,
   hasControls: false,
@@ -26,7 +28,6 @@ export const circlePointConfig = {
 
 export const lineConfig = {
   class: "line",
-  strokeWidth: 1,
   fill: "blue",
   stroke: "blue",
   originX: "center",
@@ -35,14 +36,13 @@ export const lineConfig = {
   hasBorders: false,
   hasControls: false,
   evented: false,
+  strokeDashArray: [5,5,5,5],
 };
 
 export const groupConfig = {
-  fill: "rgba(255, 255, 255, 0.4)",
-  stroke: "rgba(255, 255, 255, 0.4)",
-  hasControls: true,
+  hasControls: false,
   selectable: true,
-  hasBorders: true,
+  hasBorders: false,
   evented: true,
   lockRotation: true,
   cornerColor: "blue",

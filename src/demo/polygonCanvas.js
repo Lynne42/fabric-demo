@@ -25,6 +25,7 @@ const FabricPolygonComponent = () => {
         height: 600,
         width: 600,
         selection: false,
+        enableRetinaScaling: true,
         // centeredScaling: false,
         // selectable: false,
         // hasControls: false,
@@ -32,7 +33,7 @@ const FabricPolygonComponent = () => {
         // objectCaching: true,
         // lockMovementX: true,
         // lockMovementY: true,
-        // preserveObjectStacking: true,
+        preserveObjectStacking: true,
       },
     });
 

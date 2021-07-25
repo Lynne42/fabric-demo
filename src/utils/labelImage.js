@@ -119,7 +119,6 @@ class LabelImage {
       }
       clearTimeout(mouseWheelTimer);
       mouseWheelTimer = setTimeout(() => {
-        console.log("停止");
         Features.mouseWheelOn = false;
         this.clearWhiteBorder();
       }, 66);
@@ -148,7 +147,14 @@ class LabelImage {
       that.handleDrag(e);
     });
 
-    canvas.on("object:moving", this.checkBoudningBox.bind(that));
+    canvas.on("object:moving", (e) => {
+      Features.mouseDownMoveOn = false;
+      //this.checkBoudningBox(e)
+    });
+    canvas.on("object:moved", (e) => {
+      Features.mouseDownMoveOn = true;
+    });
+
   }
 
   // canvas 缩放
@@ -187,7 +193,9 @@ class LabelImage {
 
     if (isBorder) {
       const transform = this.canvas.viewportTransform;
-      let translateX = 0; // isLT ? 0 : -this.cWidth * this.scale + this.cWidth;
+      const fixedX = -this.cWidth * this.scale + this.cWidth;
+      const fixedY = -this.cHeight * this.scale + this.cHeight;
+      let translateX = 0; // isLT ? 0 : ;
       let translateY = 0;
 
 
@@ -195,14 +203,14 @@ class LabelImage {
         translateX = 0;
         translateY = 0;
       } else if (isBottom && isRight) {
-        translateX = -this.cWidth * this.scale + this.cWidth;
-        translateY = -this.cHeight * this.scale + this.cHeight;
+        translateX = fixedX;
+        translateY = fixedY;
 
       } else if (isLeft && isBottom) {
         translateX = 0;
-        translateY = -this.cHeight * this.scale + this.cHeight;
+        translateY = fixedY;
       } else if (isTop && isRight) {
-        translateX = -this.cWidth * this.scale + this.cWidth;
+        translateX = fixedX;
         translateY = 0;
       } else if (isTop) {
         translateX = transform[4];
@@ -214,9 +222,9 @@ class LabelImage {
 
       } else if (isBottom) {
         translateX = transform[4];
-        translateY = -this.cHeight * this.scale + this.cHeight;
+        translateY = fixedY;
       } else if (isRight) {
-        translateX = -this.cWidth * this.scale + this.cWidth;;
+        translateX = fixedX;
         translateY = transform[5];
       }
 
@@ -226,7 +234,7 @@ class LabelImage {
         0,
         this.scale,
         translateX,
-        translateX,
+        translateY,
       ]);
       this.canvas.renderAll();
 
@@ -311,13 +319,19 @@ class LabelImage {
       const points = polygonActiveShape.get("points");
 
       points.push(currentPointZoom);
-      const polygon = this.drawImage.generatePolygon(points);
+      const polygon = this.drawImage.generatePolygon(points, {
+        stroke: polygonConfig.fill,
+        fill: polygonConfig.fillOpcity,
+      });
 
       canvas.remove(polygonActiveShape);
       canvas.add(polygon);
       Arrays.polygon.polygonActiveShape = polygon;
     } else {
-      const polygon = this.drawImage.generatePolygon([currentPointZoom]);
+      const polygon = this.drawImage.generatePolygon([currentPointZoom], {
+        stroke: polygonConfig.fill,
+        fill: polygonConfig.fillOpcity,
+      });
       Arrays.polygon.polygonActiveShape = polygon;
       canvas.add(polygon);
     }
@@ -376,7 +390,6 @@ class LabelImage {
     // 获取画布上 洞 与 图形的各个集合
     const { pythons, pythonsHole } = this.getPolygonAndHolePopygon();
 
-    console.log(23222, pythons, pythonsHole);
     canvas.add(nowPoly);
 
     const newPythonsHole = pythonsHole
@@ -703,38 +716,6 @@ class LabelImage {
     );
   }
 
-  // download create result base64 image
-  createResultImage() {
-    const that = this;
-    const dom = document.createElement("canvas");
-    const nowCanvas = that.drawImage.createStaticCanvas(dom, {
-      width: that.cWidth,
-      height: that.cHeight,
-      backgroundColor: "#fff",
-    });
-
-    const objects = that.canvas.getObjects();
-    objects.forEach((nowItem) => {
-      nowItem.fill = "block";
-      nowCanvas.add(nowItem);
-    });
-    const result = nowCanvas.toDataURL({
-      format: "jpeg", // jpeg或png
-      quality: 1,
-      left: 0,
-      top: 0,
-      width: that.cWidth,
-      height: that.cHeight,
-    });
-    that.Arrays.resultLabelImage = result;
-
-    nowCanvas.clear();
-    objects.forEach((nowItem) => {
-      nowItem.fill = polygonConfig.fill;
-    });
-    console.log(result);
-  }
-
   // 合并组
   toGroup() {
     const objs = this.getObjects();
@@ -803,6 +784,38 @@ class LabelImage {
     return nowPoint;
   }
 
+  // download create result base64 image
+  createResultImage() {
+    const that = this;
+    const dom = document.createElement("canvas");
+    const nowCanvas = that.drawImage.createStaticCanvas(dom, {
+      width: that.cWidth,
+      height: that.cHeight,
+      backgroundColor: "#fff",
+    });
+
+    const objects = that.canvas.getObjects();
+    objects.forEach((nowItem) => {
+      nowItem.fill = "block";
+      nowCanvas.add(nowItem);
+    });
+    const result = nowCanvas.toDataURL({
+      format: "png",
+      left: 0,
+      top: 0,
+      width: that.cWidth,
+      height: that.cHeight,
+    });
+    that.Arrays.resultLabelImage = result;
+
+    nowCanvas.clear();
+    objects.forEach((nowItem) => {
+      nowItem.fill = polygonConfig.resultFill;
+    });
+    this.updatePolygon(objects)
+    console.log(result);
+  }
+
   // drag by btn
   moveDragByKeyboard = (type, value) => {
     const { canvas, cHeight, cWidth } = this;
@@ -811,8 +824,9 @@ class LabelImage {
       return;
     }
     // activeObj.setCoords()
-    const { left, top, width, height } = activeObj.getBoundingRect();
-
+    const { left, top, width: scaleWidth, height: scaleHeight } = activeObj.getBoundingRect();
+    const width = Math.round(scaleWidth / this.scale);
+    const height = Math.round(scaleHeight / this.scale);
     console.log(
       "moveDragByKeyboard",
       left,
@@ -823,29 +837,27 @@ class LabelImage {
     );
 
     const space = parseInt(value) || 0;
+    
 
     switch (type) {
       case "top":
-        console.log("top", top <= 0 ? height / 2 : activeObj.top - space);
-        activeObj.top = top <= 0 ? height / 2 : activeObj.top - space;
+        console.log("top", top <= 0 ? (height / 2)  : activeObj.top - space);
+        activeObj.top = activeObj.top - space;
         activeObj.setCoords();
         break;
       case "right":
         activeObj.set(
           "left",
-          left >= cWidth - width ? cWidth - width / 2 : activeObj.left + space
+          activeObj.left + space
         );
         activeObj.setCoords();
         break;
       case "bottom":
-        activeObj.top =
-          top >= cHeight - height
-            ? cHeight - height / 2
-            : activeObj.top + space;
+        activeObj.top = activeObj.top + space;
         activeObj.setCoords();
         break;
       case "left":
-        activeObj.set("left", left <= 0 ? width / 2 : activeObj.left - space);
+        activeObj.set("left", activeObj.left - space);
         activeObj.setCoords();
 
         break;
@@ -863,25 +875,28 @@ class LabelImage {
     }
     obj.setCoords();
 
-    const objBoundingBox = obj.getBoundingRect();
+    const objBoundingBox = obj.getBoundingRect(false);
 
-    if (objBoundingBox.top < 0) {
-      obj.set("top", objBoundingBox.height / 2);
-      obj.setCoords();
-    }
-    if (objBoundingBox.left > this.canvas.width - objBoundingBox.width) {
-      obj.set("left", this.canvas.width - objBoundingBox.width / 2);
-      obj.setCoords();
-    }
-    if (objBoundingBox.top > this.canvas.height - objBoundingBox.height) {
-      obj.set("top", this.canvas.height - objBoundingBox.height / 2);
-      obj.setCoords();
-    }
-    if (objBoundingBox.left < 0) {
-      obj.set("left", objBoundingBox.width / 2);
-      obj.setCoords();
-    }
+    console.log(111, objBoundingBox)
+
+    // if (objBoundingBox.top < 0) {
+    //   obj.set("top", objBoundingBox.height / 2);
+    //   obj.setCoords();
+    // }
+    // if (objBoundingBox.left > this.canvas.width - objBoundingBox.width) {
+    //   obj.set("left", this.canvas.width - objBoundingBox.width / 2);
+    //   obj.setCoords();
+    // }
+    // if (objBoundingBox.top > this.canvas.height - objBoundingBox.height) {
+    //   obj.set("top", this.canvas.height - objBoundingBox.height / 2);
+    //   obj.setCoords();
+    // }
+    // if (objBoundingBox.left < 0) {
+    //   obj.set("left", objBoundingBox.width / 2);
+    //   obj.setCoords();
+    // }
   }
+
 }
 
 export default LabelImage;
