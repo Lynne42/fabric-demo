@@ -1,5 +1,5 @@
 import React from 'react';
-import './App.css';
+// import './App.css';
 
 // import FabricComponent from './demo/canvas';
 // import FabricDragComponent from './demo/drawCanvas';
