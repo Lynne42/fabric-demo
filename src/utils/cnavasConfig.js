@@ -13,15 +13,20 @@ export const polygonConfig = {
 
 export const circlePointConfig = {
   class: "circle",
-  radius: 8,
+  radius: 4,
   fill: "rgba(86, 151, 255, 0.8)",
   firstFill: "rgba(86, 255, 164, 0.8)",
   fillErase: "rgba(255, 86, 86, 0.8)",
   firstFillErase: "rgba(255, 86, 218, 0.8)",
-
+  lockScalingX: true,
+  lockScalingY: true,
+  lockScalingFlip: true,
+  noScaleCache: true,
   selectable: false,
   hasBorders: false,
   hasControls: false,
+  scaleX: 1,
+  scaleY: 1,
   originX: "center",
   originY: "center",
 };

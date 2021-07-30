@@ -657,7 +657,7 @@ class LabelImage {
     const { polygonActiveShape } = this.Arrays.polygon;
     const startPoint = polygonActiveShape.get("points")[0];
     const currentPoint = this.getCurrentPointInfo(options);
-    const radius = Math.floor(circlePointConfig.radius * 3);
+    const radius = Math.floor(circlePointConfig.radius * 2);
     if (
       Math.abs(startPoint.x - currentPoint.x) <= radius &&
       Math.abs(startPoint.y - currentPoint.y) <= radius
