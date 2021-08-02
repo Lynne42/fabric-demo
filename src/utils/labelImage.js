@@ -353,9 +353,9 @@ class LabelImage {
       Arrays.polygon.polygonActiveShape = polygon;
     } else {
       const polygon = this.drawImage.generatePolygon([currentPointZoom], {
-        // stroke: polygonConfig.fill,
+        stroke: polygonConfig.fill,
         fill: polygonConfig.fillOpcity,
-        // strokeWidth: 1,
+        strokeWidth: 2/this.scale,
       });
       Arrays.polygon.polygonActiveShape = polygon;
       canvas.add(polygon);

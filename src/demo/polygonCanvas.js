@@ -16,6 +16,8 @@ const FabricPolygonComponent = () => {
   const [preType, setpreType] = useState('');
   const [selectValue, setselectValue] = useState('Glasses')
 
+  const [error, seterror] = useState('')
+
   useEffect(() => {
     const canvasContent = canvasRef.current;
 
@@ -79,6 +81,7 @@ const FabricPolygonComponent = () => {
     setpreType(type)
     if(typeof radio === 'number') {
       canvas.clearAll();
+      seterror('')
       if(radio) {
         // 按比例预设区域
         canvas.presetAreaRect(radio);
@@ -88,20 +91,20 @@ const FabricPolygonComponent = () => {
       if(preResult) {
         canvas.clearAll();
         canvas.setPreset(JSON.parse(preResult))
+        seterror('')
       } else {
-        alert('请先预设选区');
+        seterror('请先预设选区');
       }
     }
   }
 
   const handleSave = () => {
     const objs = canvas.getSavePresetObject();
-    console.log(1, objs)
     if(objs) {
       localStorage.setItem(selectValue, JSON.stringify(objs));
-
+      seterror('')
     } else {
-      alert('请先绘制预设选区')
+      seterror('请先绘制预设选区')
     }
   }
   return (
@@ -173,6 +176,8 @@ const FabricPolygonComponent = () => {
           </select>
           <button className="button" onClick={handleSave}>保存预设区域</button>
         </div>
+
+        <h1 style={{color: 'red'}}>{error}</h1>
       </div>
     </div>
   );
