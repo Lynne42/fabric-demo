@@ -22,8 +22,8 @@ const FabricPolygonComponent = () => {
     const initCanvas = new PolygonLabelImage({
       canvas: canvasContent,
       canvasConfig: {
-        height: 300,
-        width: 300,
+        height: 512,
+        width: 512,
         selection: false,
         enableRetinaScaling: true,
         // centeredScaling: false,

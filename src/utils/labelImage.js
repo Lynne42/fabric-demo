@@ -21,10 +21,10 @@ class LabelImage {
     this.bgImg = null;
 
     // canvas width
-    this.cWidth = options.canvas.clientWidth;
+    this.cWidth = this.canvas.getWidth();
 
     // canvas height
-    this.cHeight = options.canvas.clientHeight;
+    this.cHeight = this.canvas.getHeight();
 
     this.iWidth = 0;
     // 图片高度
@@ -116,12 +116,13 @@ class LabelImage {
       Features.mouseWheelOn = true;
       if (Features.mouseWheelOn) {
         that.handleZoom(e);
+        that.forbidCircleAndlinescaling();
       }
       clearTimeout(mouseWheelTimer);
       mouseWheelTimer = setTimeout(() => {
         Features.mouseWheelOn = false;
         this.clearWhiteBorder();
-      }, 66);
+      }, 100);
     });
     canvas.on("mouse:down", (e) => {
       if (e.e.altKey) {
@@ -190,7 +191,6 @@ class LabelImage {
       tl,
       br
     );
-
     if (isBorder) {
       const transform = this.canvas.viewportTransform;
       const fixedX = -this.cWidth * this.scale + this.cWidth;
@@ -247,9 +247,7 @@ class LabelImage {
       isTop = tl.y < 0,
       isRight = br.x > this.cWidth,
       isBottom = br.y > this.cHeight;
-
     let isBorder = isLeft || isTop || isRight || isBottom;
-
     return {
       isBorder,
       isLeft,
@@ -271,6 +269,18 @@ class LabelImage {
     const { left, top } = groupObject.getBoundingRect();
     this.offsetOriginX = left - this.originX;
     this.offsetOriginY = top - this.originY;
+  }
+
+  // 避免circle and line scale
+  forbidCircleAndlinescaling() {
+    const circleAndLineList = this.getObjects().filter(
+      item => item.class === 'circle' || item.class === 'line'
+    )
+    circleAndLineList.forEach(item => {
+      console.log(33, item.zoomX, item.scaleX, this.canvas.getZoom())
+      item.set('scaleX', 1/(item.zoomX || 1))
+      item.set('scaleY', 1/(item.zoomY || 1))
+    })
   }
 
   // 设置 Features
@@ -306,6 +316,8 @@ class LabelImage {
       });
     }
 
+    circle.on('')
+
     const points = [
       currentPointZoom.x,
       currentPointZoom.y,
@@ -340,6 +352,7 @@ class LabelImage {
     polygonPointArray.push(circle);
     polygonLineArray.push(line);
 
+    console.log(1313, circle, this.scale)
     canvas.add(line);
     canvas.add(circle);
     canvas.selection = false;
@@ -379,7 +392,6 @@ class LabelImage {
     }
 
     // this.resetFeaturesAttr("polygonOn", false);
-    console.log(this.canvas.getObjects());
     this.resetPolygonData();
   }
 
@@ -403,8 +415,6 @@ class LabelImage {
 
     const { relationshipList, noRelationshipList } =
       drawImage.getIntersectionByPreAndTarget(pythons, nowPoly);
-
-    console.log("polygon 关系", relationshipList, noRelationshipList);
 
     if (!relationshipList.length) {
       this.drawHoleToPolygon([...pythons, nowPoly], [...pythonsHole]);
@@ -465,7 +475,6 @@ class LabelImage {
     const { relationshipList, noRelationshipList } =
       drawImage.getIntersectionByPreAndTarget(pythons, nowPoly);
 
-    console.log("erase1", relationshipList, noRelationshipList);
     if (!relationshipList.length) {
       this.drawHoleToPolygon(pythons, pythonsHole);
     } else {
@@ -498,7 +507,6 @@ class LabelImage {
           [...noHoleRelationshipList, targetHole]
         );
       } else {
-        console.log("这里");
         const resultPoint = this.combineImage.multiDifference(
           relationshipList,
           targetHole
@@ -542,7 +550,6 @@ class LabelImage {
     const resultPoint = [];
     for (let i = 0, len = polygons.length; i < len; i++) {
       resultPoint[i] = [];
-      console.log(1, polygons[i].points);
       resultPoint[i].push(polygons[i].points);
 
       for (let j = 0, len2 = holes.length; j < len2; j++) {
@@ -578,7 +585,6 @@ class LabelImage {
   // 更新canvas
   updatePolygon(polysArr = []) {
     this.clearObject();
-    console.log("result", polysArr);
     polysArr.forEach((np) => {
       if (np) {
         this.canvas.add(np);
@@ -657,7 +663,7 @@ class LabelImage {
     const { polygonActiveShape } = this.Arrays.polygon;
     const startPoint = polygonActiveShape.get("points")[0];
     const currentPoint = this.getCurrentPointInfo(options);
-    const radius = Math.floor(circlePointConfig.radius * 2);
+    const radius = Math.floor(circlePointConfig.radius);
     if (
       Math.abs(startPoint.x - currentPoint.x) <= radius &&
       Math.abs(startPoint.y - currentPoint.y) <= radius
@@ -751,28 +757,35 @@ class LabelImage {
       const resultPolygon = [];
       // 根据偏移量， 重写 polygon的 点
       subObjects.forEach((object) => {
-        const nowPoint = that.resetPoints(
-          object.get("points"),
-          that.offsetOriginX,
-          that.offsetOriginY
-        );
+        const pts = object.get("points");
+        if(pts && pts.length) {
+          const nowPoint = that.resetPoints(
+            object.get("points"),
+            that.offsetOriginX,
+            that.offsetOriginY
+          );
 
-        if (object.holes && object.holes.length) {
-          const holePointArr = object.holes.map((hole) =>
-            that.resetPoints(hole, that.offsetOriginX, that.offsetOriginY)
-          );
-          const pro = new that.PolygonHole(
-            [nowPoint, ...holePointArr],
-            polygonConfig
-          );
-          resultPolygon.push(pro);
-        } else {
-          resultPolygon.push(
-            that.drawImage.generatePolygon(nowPoint, polygonConfig)
-          );
+          if (object.holes && object.holes.length) {
+            const holePointArr = object.holes.map((hole) =>
+              that.resetPoints(hole, that.offsetOriginX, that.offsetOriginY)
+            );
+            const pro = new that.PolygonHole(
+              [nowPoint, ...holePointArr],
+              polygonConfig
+            );
+            resultPolygon.push(pro);
+          } else {
+            resultPolygon.push(
+              that.drawImage.generatePolygon(nowPoint, polygonConfig)
+            );
+          }
         }
+
       });
-      that.updatePolygon(resultPolygon);
+      if(resultPolygon && resultPolygon.length) {
+        that.updatePolygon(resultPolygon);
+      }
+
     }
   }
 
@@ -795,8 +808,13 @@ class LabelImage {
     });
 
     const objects = that.canvas.getObjects();
+    if(!objects.length) {
+      return {
+        region: null
+      }
+    }
     objects.forEach((nowItem) => {
-      nowItem.fill = "block";
+      nowItem.set('fill', 'block');
       nowCanvas.add(nowItem);
     });
     const result = nowCanvas.toDataURL({
@@ -806,14 +824,18 @@ class LabelImage {
       width: that.cWidth,
       height: that.cHeight,
     });
-    that.Arrays.resultLabelImage = result;
+    // that.Arrays.resultLabelImage = result;
 
     nowCanvas.clear();
     objects.forEach((nowItem) => {
-      nowItem.fill = polygonConfig.resultFill;
+      nowItem.set('fill', polygonConfig.resultFill);
     });
     this.updatePolygon(objects)
-    console.log(result);
+
+
+    return {
+      region: result
+    }
   }
 
   // drag by btn
@@ -827,21 +849,12 @@ class LabelImage {
     const { left, top, width: scaleWidth, height: scaleHeight } = activeObj.getBoundingRect();
     const width = Math.round(scaleWidth / this.scale);
     const height = Math.round(scaleHeight / this.scale);
-    console.log(
-      "moveDragByKeyboard",
-      left,
-      top,
-      width,
-      height,
-      canvas.getWidth()
-    );
 
     const space = parseInt(value) || 0;
-    
+
 
     switch (type) {
       case "top":
-        console.log("top", top <= 0 ? (height / 2)  : activeObj.top - space);
         activeObj.top = activeObj.top - space;
         activeObj.setCoords();
         break;
@@ -869,15 +882,13 @@ class LabelImage {
 
   // 检查边界，避免元素拖出边界
   checkBoudningBox(e) {
-    const obj = e.target;
-    if (!obj) {
-      return;
-    }
-    obj.setCoords();
+    // const obj = e.target;
+    // if (!obj) {
+    //   return;
+    // }
+    // obj.setCoords();
 
-    const objBoundingBox = obj.getBoundingRect(false);
-
-    console.log(111, objBoundingBox)
+    // const objBoundingBox = obj.getBoundingRect(false);
 
     // if (objBoundingBox.top < 0) {
     //   obj.set("top", objBoundingBox.height / 2);
