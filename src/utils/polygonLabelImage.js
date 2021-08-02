@@ -76,6 +76,32 @@ class PolygonLabelImage extends LabelImage {
     }
   };
 
+  // 双击合并图形
+  handleMousedbDown = () => {
+    try {
+      if (this.Features.polygonOn) {
+        this.generatePolygon({
+          type: "polygon",
+          fill: 'rgba(255, 255, 255, 0.4)',
+          stroke: 'none',
+        });
+        return
+      }
+
+      if (this.Features.eraseOn) {
+        this.generatePolygon({
+          type: "polygon-erase",
+          config: {
+            name: 'polygon-erase',
+          },
+        });
+        return
+      }
+    } catch (error) {
+      console.log("error", error);
+    }
+  }
+
   handleToDataURL = () => {
     this.createResultImage();
   };
@@ -104,15 +130,12 @@ class PolygonLabelImage extends LabelImage {
     const rect = this.drawImage.generatePolygon(points, {
       id: 'preset-rect'
     })
-    this.clearObject();
     canvas.add(rect)
     canvas.renderAll()
   }
 
   // 预设 objects
   setPreset(objs) {
-    const that = this;
-    that.clearObject();
     this.drawHoleToPolygon(objs.pythons, objs.pythonsHole)
   }
 

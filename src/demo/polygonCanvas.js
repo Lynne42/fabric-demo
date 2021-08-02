@@ -22,8 +22,8 @@ const FabricPolygonComponent = () => {
     const initCanvas = new PolygonLabelImage({
       canvas: canvasContent,
       canvasConfig: {
-        height: 512,
-        width: 512,
+        height: 500,
+        width: 500,
         selection: false,
         enableRetinaScaling: true,
         // centeredScaling: false,
@@ -40,7 +40,7 @@ const FabricPolygonComponent = () => {
     initCanvas.resetFeaturesAttr("polygonOn", true);
 
     setcanvas(initCanvas);
-    initCanvas.setImage("https://i.ibb.co/cXKy30V/Rectangle-139.png");
+    initCanvas.setImage("https://i.ibb.co/F3GVvf0/Lark20210802-161833.png");
   }, []);
 
   const handlePolygon = () => {
@@ -78,15 +78,15 @@ const FabricPolygonComponent = () => {
   const handlePreAction = (type, radio) => {
     setpreType(type)
     if(typeof radio === 'number') {
+      canvas.clearAll();
       if(radio) {
         // 按比例预设区域
         canvas.presetAreaRect(radio);
-      } else {
-        canvas.clearAll()
       }
     } else {
       const preResult = localStorage.getItem(type);
       if(preResult) {
+        canvas.clearAll();
         canvas.setPreset(JSON.parse(preResult))
       } else {
         alert('请先预设选区');

@@ -124,6 +124,10 @@ class LabelImage {
         this.clearWhiteBorder();
       }, 100);
     });
+    canvas.on("mouse:dblclick", e => {
+      console.log(999)
+      that.handleMousedbDown(e);
+    })
     canvas.on("mouse:down", (e) => {
       if (e.e.altKey) {
         Features.mouseDownMoveOn = true;
@@ -274,13 +278,18 @@ class LabelImage {
   // 避免circle and line scale
   forbidCircleAndlinescaling() {
     const circleAndLineList = this.getObjects().filter(
-      item => item.class === 'circle' || item.class === 'line'
+      item => item.class === 'circle' || item.class === 'polygon'
     )
     circleAndLineList.forEach(item => {
-      console.log(33, item.zoomX, item.scaleX, this.canvas.getZoom())
-      item.set('scaleX', 1/(item.zoomX || 1))
-      item.set('scaleY', 1/(item.zoomY || 1))
+      if(item.class === 'circle') {
+        item.set('scaleX', 1 / this.scale )
+        item.set('scaleY', 1 / this.scale )
+      } else {
+        item.set('strokeWidth', 2 / this.scale )
+      }
     })
+
+    this.canvas.renderAll();
   }
 
   // 设置 Features
@@ -308,15 +317,17 @@ class LabelImage {
 
     const circle = this.drawImage.generateCircle(
       currentPointZoom,
-      configCircle
+      {
+        ...configCircle,
+        scaleX: 1 / this.scale,
+        scaleY: 1 / this.scale,
+      }
     );
     if (arr.length === 0) {
       circle.set({
         fill: configCircle.firstFill || circlePointConfig.firstFill,
       });
     }
-
-    circle.on('')
 
     const points = [
       currentPointZoom.x,
@@ -334,6 +345,7 @@ class LabelImage {
       const polygon = this.drawImage.generatePolygon(points, {
         stroke: polygonConfig.fill,
         fill: polygonConfig.fillOpcity,
+        strokeWidth: 2/this.scale,
       });
 
       canvas.remove(polygonActiveShape);
@@ -341,8 +353,9 @@ class LabelImage {
       Arrays.polygon.polygonActiveShape = polygon;
     } else {
       const polygon = this.drawImage.generatePolygon([currentPointZoom], {
-        stroke: polygonConfig.fill,
+        // stroke: polygonConfig.fill,
         fill: polygonConfig.fillOpcity,
+        // strokeWidth: 1,
       });
       Arrays.polygon.polygonActiveShape = polygon;
       canvas.add(polygon);
@@ -352,7 +365,6 @@ class LabelImage {
     polygonPointArray.push(circle);
     polygonLineArray.push(line);
 
-    console.log(1313, circle, this.scale)
     canvas.add(line);
     canvas.add(circle);
     canvas.selection = false;
@@ -626,6 +638,10 @@ class LabelImage {
     objs.forEach((item) => {
       this.canvas.remove(item);
     });
+    this.Arrays.polygon.polygonPointArray = [];
+    this.Arrays.polygon.polygonLineArray = [];
+    this.Arrays.polygon.polygonActiveShape = null;
+    this.canvas.renderAll()
   }
 
   // 组合 所有画布对象 为一组
@@ -826,6 +842,7 @@ class LabelImage {
     });
     // that.Arrays.resultLabelImage = result;
 
+    console.log(99, result)
     nowCanvas.clear();
     objects.forEach((nowItem) => {
       nowItem.set('fill', polygonConfig.resultFill);

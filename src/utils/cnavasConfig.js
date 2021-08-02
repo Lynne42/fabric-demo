@@ -4,7 +4,7 @@ export const polygonConfig = {
   fill: "rgba(255, 255, 255, 0.4)",
   fillOpcity: "rgba(255, 255, 255, 0)",
   resultFill: "rgba(255, 255, 255, 0.4)",
-  strokeDashArray: [5,5,5,5],
+  strokeDashArray: [2,1],
   selectable: false,
   hasBorders: false,
   evented: false,
@@ -25,8 +25,8 @@ export const circlePointConfig = {
   selectable: false,
   hasBorders: false,
   hasControls: false,
-  scaleX: 1,
-  scaleY: 1,
+  evented: false,
+  strokeUniform: true,
   originX: "center",
   originY: "center",
 };
@@ -41,7 +41,6 @@ export const lineConfig = {
   hasBorders: false,
   hasControls: false,
   evented: false,
-  strokeDashArray: [5,5,5,5],
 };
 
 export const groupConfig = {

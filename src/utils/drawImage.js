@@ -61,6 +61,8 @@ class DrawImage {
     const polygon = new window.fabric.Polygon(points, {
       ...polygonConfig,
       ...config,
+      noScaleCache: false,
+      strokeUniform: true,
     });
     return polygon;
   }
@@ -100,7 +102,6 @@ class DrawImage {
     Object.keys(controlVisible).forEach((item) =>
       group.setControlVisible(item, controlVisible[item])
     );
-    console.log(444, group);
     return group;
   }
 
