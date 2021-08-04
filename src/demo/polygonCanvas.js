@@ -24,8 +24,8 @@ const FabricPolygonComponent = () => {
     const initCanvas = new PolygonLabelImage({
       canvas: canvasContent,
       canvasConfig: {
-        height: 500,
-        width: 500,
+        height: 488,
+        width: 488,
         selection: false,
         enableRetinaScaling: true,
         // centeredScaling: false,
@@ -42,7 +42,7 @@ const FabricPolygonComponent = () => {
     initCanvas.resetFeaturesAttr("polygonOn", true);
 
     setcanvas(initCanvas);
-    initCanvas.setImage("https://i.ibb.co/F3GVvf0/Lark20210802-161833.png");
+    initCanvas.setImage("https://i.ibb.co/vXMQhVx/000064.png");
   }, []);
 
   const handlePolygon = () => {
